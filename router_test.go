@@ -54,13 +54,13 @@ func TestRouterMatch(t *testing.T) {
 	routes := []route{
 		{"GET", "/"},
 		{"GET", "/user"},
-		{"GET", `/user/:id:^\d+$/books`},
+		{"GET", `/user/:id=^\d+$/books`},
 		{"GET", "/user/:id"},
 		{"GET", "/user/:id/profile"},
 		{"GET", "/user/:id/profile/:theme"},
 		{"GET", "/user/:id/:something"},
 		{"GET", "/admin"},
-		{"GET", `/admin/:role:^\d+$`},
+		{"GET", `/admin/:role=^\d+$`},
 		{"GET", "/中国人"},
 	}
 

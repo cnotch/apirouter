@@ -156,7 +156,7 @@ OUTER:
 
 // regular expressions parameter include ':' + res[index]
 func (t *tree) matchReParam(state, sc int, segment string) int {
-	next := t.base[state] + code(':')
+	next := t.base[state] + code('=')
 	if next < sc && state == t.check[next] {
 		reState := next
 		// check regular expressions
@@ -211,7 +211,7 @@ func (t *tree) add(pattern string, handler Handler) {
 				i = i + m - 1 // for i++
 			}
 
-			reSep := strings.IndexByte(nameAndRe, ':') // Search for a name/regexp separator.
+			reSep := strings.IndexByte(nameAndRe, '=') // Search for a name/regexp separator.
 			if reSep < 0 {                             // only name
 				e.pnames = append(e.pnames, nameAndRe)
 			} else {
@@ -233,7 +233,7 @@ func (t *tree) add(pattern string, handler Handler) {
 					t.res = append(t.res, re)
 				}
 
-				key = append(key, ':', byte(rec))
+				key = append(key, '=', byte(rec))
 			}
 		} else if c == '*' {
 			m := strings.IndexByte(pattern[i:], '/')

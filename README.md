@@ -62,12 +62,12 @@ I had to write one myself as an exercise
 	```
 ### Precedence example
 
-On the example below the router will test the routes in the following order, /users/list then /users/:id:^\d+$ then /users/:id then /users/*page.
+On the example below the router will test the routes in the following order, /users/list then /users/:id=^\d+$ then /users/:id then /users/*page.
 
 ```go
 r:= apirouter.New(
 	apirouter.GET("/users/:id",...),
-	apirouter.GET(`/users/:id:^\d+$`,...),
+	apirouter.GET(`/users/:id=^\d+$`,...),
 	apirouter.GET("/users/*page",...),
 	apirouter.GET("/users/list",...),
 )
@@ -132,11 +132,11 @@ r:=apirouter.New(
 
 #### Regular expressions
 
-If a parameter must match an exact pattern (digits only, for example), you can also set a [regular expression](https://golang.org/pkg/regexp/syntax) constraint just after the parameter name and another `:`:
+If a parameter must match an exact pattern (digits only, for example), you can also set a [regular expression](https://golang.org/pkg/regexp/syntax) constraint just after the parameter name and `=`:
 
 ```Go
 r:=apirouter.New(
-	apirouter.GET(`/users/:id:^\d+$`, func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
+	apirouter.GET(`/users/:id=^\d+$`, func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
 		id := ps.ByName("id")
 		fmt.Fprintf(w, "Page of user #%s", id)
 	}),
@@ -154,7 +154,7 @@ A parameter with a regular expression can be used on the same level as a simple 
 
 ```Go
 r:=apirouter.New(
-	apirouter.GET(`/users/:id:^\d+$`, func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
+	apirouter.GET(`/users/:id=^\d+$`, func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
 		id := ps.ByName("id")
 		fmt.Fprintf(w, "Page of user #%s", id)
 	}),

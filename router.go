@@ -36,16 +36,16 @@
 // contain three types of parameters:
 //  Syntax    					Type
 //  :name     					named parameter
-//	:name:regular-expressions	regular expression parameter
+//	:name=regular-expressions	regular expression parameter
 //	*name						wildcard parameter
 //
 // Matching priority, on the example below the router will test the routes
-// in the following order, /users/list then /users/:id:^\d+$
+// in the following order, /users/list then /users/:id=^\d+$
 // then /users/:id then /users/*page.
 //
 // 	r:= apirouter.New(
 // 		apirouter.GET("/users/:id",...),
-// 		apirouter.GET(`/users/:id:^\d+$`,...),
+// 		apirouter.GET(`/users/:id=^\d+$`,...),
 // 		apirouter.GET("/users/*page",...),
 // 		apirouter.GET("/users/list",...),
 // 	)
@@ -62,8 +62,8 @@
 //
 // If a parameter must match an exact pattern (digits only,
 // for example), you can also set a regular expression constraint
-// just after the parameter name and another `:`.
-//  Pattern: /users/:id:^\d+$
+// just after the parameter name and `=`.
+//  Pattern: /users/:id=^\d+$
 //
 //  Requests:
 //   /users/123            match: id="123"
