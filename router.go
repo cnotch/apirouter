@@ -34,10 +34,10 @@
 //
 // The registered pattern, against which the router matches incoming requests, can
 // contain three types of parameters(default style):
-//  Syntax    					Type
-//  :name     					named parameter
-//	:name=regular-expressions	regular expression parameter
-//	*name						wildcard parameter
+// 	Syntax                      Type
+//  :name                       named parameter
+//  :name=regular-expressions   regular expression parameter
+//  *name                       wildcard parameter
 //
 // Matching priority, on the example below the router will test the routes
 // in the following order, /users/list then /users/:id=^\d+$
