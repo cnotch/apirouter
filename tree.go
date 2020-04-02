@@ -87,6 +87,7 @@ func (t *tree) patternMatch(path string, params *Params) (h Handler) {
 
 	lastStarState := -1 // last '*' state
 	lastStarIndex := 0  // index of the last '*' in the path
+	lastStarPcount := uint16(0)
 	pcount := uint16(0) // parameter count
 	sc := len(t.base)
 OUTER:
@@ -94,7 +95,8 @@ OUTER:
 		// try to match the beginning '/' of current segment
 		slashState := t.base[state] + code('/')
 		if !(slashState < sc && state == t.check[slashState]) {
-			return
+			state = -1
+			break
 		}
 		state = slashState
 		i++
@@ -105,6 +107,7 @@ OUTER:
 		if next < sc && slashState == t.check[next] {
 			lastStarIndex = begin
 			lastStarState = next
+			lastStarPcount = pcount
 		}
 
 		// try to match current segment
@@ -150,6 +153,7 @@ OUTER:
 		if lastStarState == -1 {
 			return
 		}
+		pcount = lastStarPcount
 		index := pcount << 1
 		params.indices[index] = int16(lastStarIndex)
 		params.indices[index+1] = int16(len(path))
