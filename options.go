@@ -36,8 +36,11 @@ func NotFoundHandler(handler http.Handler) Option {
 	})
 }
 
-// Handle creates the option to registers the handler for the given method and pattern.
-func Handle(method string, pattern string, handler Handler) Option {
+// API creates the option to registers api.
+// 	- method:  supported HTTP methods,
+// 	- pattern: url path matched pattern,
+// 	- handler: http request handler.
+func API(method string, pattern string, handler Handler) Option {
 	if handler == nil {
 		panic("router: nil handler")
 	}
@@ -55,39 +58,39 @@ func Handle(method string, pattern string, handler Handler) Option {
 	})
 }
 
-// GET is a shortcut for Handle(http.MethodGet, pattern, handler)
+// GET is a shortcut for API(http.MethodGet, pattern, handler)
 func GET(pattern string, handler Handler) Option {
-	return Handle(http.MethodGet, pattern, handler)
+	return API(http.MethodGet, pattern, handler)
 }
 
-// POST is a shortcut for Handle(http.MethodPost, pattern, handler)
+// POST is a shortcut for API(http.MethodPost, pattern, handler)
 func POST(pattern string, handler Handler) Option {
-	return Handle(http.MethodPost, pattern, handler)
+	return API(http.MethodPost, pattern, handler)
 }
 
-// PUT is a shortcut for Handle(http.MethodPut, pattern, handler)
+// PUT is a shortcut for API(http.MethodPut, pattern, handler)
 func PUT(pattern string, handler Handler) Option {
-	return Handle(http.MethodPut, pattern, handler)
+	return API(http.MethodPut, pattern, handler)
 }
 
-// DELETE is a shortcut for Handle(http.MethodDelete, pattern, handler)
+// DELETE is a shortcut for API(http.MethodDelete, pattern, handler)
 func DELETE(pattern string, handler Handler) Option {
-	return Handle(http.MethodDelete, pattern, handler)
+	return API(http.MethodDelete, pattern, handler)
 }
 
-// HEAD is a shortcut for Handle(http.MethodHead, pattern, handler)
+// HEAD is a shortcut for API(http.MethodHead, pattern, handler)
 func HEAD(pattern string, handler Handler) Option {
-	return Handle(http.MethodHead, pattern, handler)
+	return API(http.MethodHead, pattern, handler)
 }
 
-// OPTIONS is a shortcut for Handle(http.MethodOptions, pattern, handler)
+// OPTIONS is a shortcut for API(http.MethodOptions, pattern, handler)
 func OPTIONS(pattern string, handler Handler) Option {
-	return Handle(http.MethodOptions, pattern, handler)
+	return API(http.MethodOptions, pattern, handler)
 }
 
-// PATCH is a shortcut for Handle(http.MethodPatch, pattern, handler)
+// PATCH is a shortcut for API(http.MethodPatch, pattern, handler)
 func PATCH(pattern string, handler Handler) Option {
-	return Handle(http.MethodPatch, pattern, handler)
+	return API(http.MethodPatch, pattern, handler)
 }
 
 var ctxOffset uintptr
@@ -98,13 +101,14 @@ func init() {
 	ctxOffset = sf.Offset
 }
 
-// HTTPHandle creates the option to registers the stdlib handler for the given method and pattern.
-func HTTPHandle(method string, pattern string, handler http.Handler) Option {
+// Handle creates the option to perform similar actions
+// with the standard library http.Handle.
+func Handle(method string, pattern string, handler http.Handler) Option {
 	if handler == nil {
 		panic("router: nil handler")
 	}
 
-	return Handle(method, pattern, func(w http.ResponseWriter, r *http.Request, ps Params) {
+	return API(method, pattern, func(w http.ResponseWriter, r *http.Request, ps Params) {
 		if ps.Count() > 0 {
 			paramsCtx := newParamsCtx(r.Context())
 			paramsCtx.params = ps
@@ -122,10 +126,11 @@ func HTTPHandle(method string, pattern string, handler http.Handler) Option {
 	})
 }
 
-// HTTPHandleFunc creates the option to registers the stdlib handler function for the given method and pattern.
-func HTTPHandleFunc(method string, pattern string, handler func(http.ResponseWriter, *http.Request)) Option {
+// HandleFunc creates the option to perform similar actions
+// with the standard library http.HandleFunc.
+func HandleFunc(method string, pattern string, handler func(http.ResponseWriter, *http.Request)) Option {
 	if handler == nil {
 		panic("router: nil handler")
 	}
-	return HTTPHandle(method, pattern, http.HandlerFunc(handler))
+	return Handle(method, pattern, http.HandlerFunc(handler))
 }

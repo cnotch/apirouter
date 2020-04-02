@@ -15,13 +15,13 @@ type route struct {
 }
 
 func loadRouterSingle(method, path string, h apirouter.Handler) http.Handler {
-	return apirouter.New(apirouter.Handle(method, path, h))
+	return apirouter.New(apirouter.API(method, path, h))
 }
 
 func loadRouter(routes []route, style apirouter.Style, h apirouter.Handler) *apirouter.Router {
 	options := make([]apirouter.Option, len(routes))
 	for i, route := range routes {
-		options[i] = apirouter.Handle(route.method, route.path, h)
+		options[i] = apirouter.API(route.method, route.path, h)
 	}
 
 	return apirouter.NewWithStyle(style, options...)
@@ -125,6 +125,7 @@ func TestRouterMatch_gRPC(t *testing.T) {
 		{"GET", "/user/{name}/profile:verb1"},
 		{"GET", "/user/{id}/profile/{theme}"},
 		{"GET", "/user/{id}/{something}"},
+		{"GET", "/stream/*"},
 		{"GET", "/admin"},
 		{"GET", `/admin/{role=^\d+$}`},
 		{"GET", "/中国人"},
@@ -142,6 +143,7 @@ func TestRouterMatch_gRPC(t *testing.T) {
 		{"GET", "/user/guest/profile:verb2", false, nil, nil},
 		{"GET", "/user/guest/profile/456", true, []string{"id", "theme"}, []string{"guest", "456"}},
 		{"GET", "/user/guest/456", true, []string{"id", "something"}, []string{"guest", "456"}},
+		{"GET", "/stream/video1", true, []string{""}, []string{"video1"}},
 		{"GET", "/admin", true, nil, nil},
 		{"GET", "/x", false, nil, nil},
 		{"GET", "/user/guest/456/x", false, nil, nil},
@@ -190,11 +192,11 @@ func TestRouterMatchWildcards_gRPC(t *testing.T) {
 func TestRouterServeHTTP(t *testing.T) {
 	handleCount := 0
 	router := apirouter.New(
-		apirouter.Handle("GET", "/user/repos", func(w http.ResponseWriter, req *http.Request, ps apirouter.Params) {
+		apirouter.API("GET", "/user/repos", func(w http.ResponseWriter, req *http.Request, ps apirouter.Params) {
 			handleCount++
 			assert.Zero(t, ps.Count())
 		}),
-		apirouter.HTTPHandleFunc("GET", "/user/:name", func(w http.ResponseWriter, req *http.Request) {
+		apirouter.HandleFunc("GET", "/user/:name", func(w http.ResponseWriter, req *http.Request) {
 			handleCount++
 			pp := apirouter.PathParams(req.Context())
 			assert.NotNil(t, pp)
@@ -203,7 +205,7 @@ func TestRouterServeHTTP(t *testing.T) {
 			assert.Equal(t, "gordon", pp.Value(0))
 			assert.Equal(t, "gordon", pp.ByName("name"))
 		}),
-		apirouter.Handle("GET", "/:a/:b/:c/:d/:e", func(w http.ResponseWriter, req *http.Request, ps apirouter.Params) {
+		apirouter.API("GET", "/:a/:b/:c/:d/:e", func(w http.ResponseWriter, req *http.Request, ps apirouter.Params) {
 			handleCount++
 			assert.Equal(t, 5, ps.Count())
 			assert.Equal(t, "a", ps.Name(0))
@@ -233,27 +235,55 @@ func TestRouterServeHTTP(t *testing.T) {
 func TestRouterNewPanic(t *testing.T) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 	assert.Panics(t, func() {
-		router := apirouter.New(apirouter.Handle("GET", "/", nil))
+		router := apirouter.New(apirouter.API("GET", "/", nil))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.New(apirouter.Handle("GET", "/", apirouter.Handler(nil)))
+		router := apirouter.New(apirouter.API("GET", "/", apirouter.Handler(nil)))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.New(apirouter.Handle("GET", "user/admin", page))
+		router := apirouter.New(apirouter.API("GET", "user/admin", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.New(apirouter.Handle("GET", "/user//admin", page))
+		router := apirouter.New(apirouter.API("GET", "/user//admin", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.New(apirouter.Handle("GET", "/user/*id/books", page))
+		router := apirouter.New(apirouter.API("GET", "/user/:id=/books", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.New(apirouter.Handle("PICK", "/", page))
+		router := apirouter.New(apirouter.API("GET", "/user/*id/books", page))
+		_ = router
+	})
+	assert.Panics(t, func() {
+		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "user/admin", page))
+		_ = router
+	})
+	assert.Panics(t, func() {
+		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user//admin", page))
+		_ = router
+	})
+	assert.Panics(t, func() {
+		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/**/books", page))
+		_ = router
+	})
+	assert.Panics(t, func() {
+		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/{id=**}/books", page))
+		_ = router
+	})
+	assert.Panics(t, func() {
+		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/{id/books", page))
+		_ = router
+	})
+	assert.Panics(t, func() {
+		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/{id=}/books", page))
+		_ = router
+	})
+	assert.Panics(t, func() {
+		router := apirouter.New(apirouter.API("PICK", "/", page))
 		_ = router
 	})
 	assert.Panics(t, func() {

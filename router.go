@@ -83,7 +83,7 @@
 //
 // The value of parameters is saved as a Params. The Params
 // is passed to the Handler func as a third parameter.
-// If the handler is registered with HTTPHandle or HTTPHandleFunc,
+// If the handler is registered with Handle or HandleFunc,
 // params is stored in request's context.
 //
 // Example:
@@ -94,7 +94,7 @@
 // 			fmt.Fprintf(w, "Page of stream #%s", id)
 // 		}),
 //
-// 		apirouter.HTTPHandleFunc("GET","/users/:id", func(w http.ResponseWriter, r *http.Request) {
+// 		apirouter.HandleFunc("GET","/users/:id", func(w http.ResponseWriter, r *http.Request) {
 // 			ps := apirouter.PathParams(r.Context())
 // 			id := ps.ByName("id")
 // 			fmt.Fprintf(w, "Page of user #%s", id)

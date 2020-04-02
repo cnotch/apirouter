@@ -14,7 +14,7 @@ When developing server-side applications, it is necessary to provide RESTful API
 + Simple: focus on path parameter extraction and routing
 + Fast: better performance
 
-[aero] (https://github.com/aerogo/aero) performance is good, but it's more like a framwork. [httprouter] (https://github.com/julienschmidt/httprouter) functions are focusing, but its performance is mediocre. 
+[aero](https://github.com/aerogo/aero) performance is good, but it's more like a framwork. [httprouter](https://github.com/julienschmidt/httprouter) functions are focusing, but its performance is mediocre. 
 
 I had to write one myself as an exercise
 
@@ -47,7 +47,7 @@ I had to write one myself as an exercise
 
 	```Go
 	r := apirouter.New(
-		apirouter.Handle("GET","/",func(w http.ResponseWriter, r *http.Request, ps apirouter.Params){
+		apirouter.API("GET","/",func(w http.ResponseWriter, r *http.Request, ps apirouter.Params){
 			fmt.Fprint(w, "Hello")
 		}),
 	)
@@ -106,12 +106,12 @@ On the example below the router will use google style.
 
 ```go
 r:= apirouter.New(apirouter.GoogleStyle,
-	apirouter.Handle("GET", `/user/{id=^\d+$}/books`,h),
-	apirouter.Handle("GET", "/user/{id}",h),
-	apirouter.Handle("GET", "/user/{id}:verb",h),
-	apirouter.Handle("GET", "/user/{id}/profile/{theme}",h),
-	apirouter.Handle("GET", "/images/{file=**}",h),
-	apirouter.Handle("GET", "/images/{file=**}:jpg",h),
+	apirouter.API("GET", `/user/{id=^\d+$}/books`,h),
+	apirouter.API("GET", "/user/{id}",h),
+	apirouter.API("GET", "/user/{id}:verb",h),
+	apirouter.API("GET", "/user/{id}/profile/{theme}",h),
+	apirouter.API("GET", "/images/{file=**}",h),
+	apirouter.API("GET", "/images/{file=**}:jpg",h),
 )
 ```
 
@@ -133,7 +133,7 @@ Verb		= ":" LITERAL ;
 
 The value of parameters is saved as a [Params](https://godoc.org/github.com/cnotch/apirouter/#Params). The Params is passed to the [Handler](https://godoc.org/github.com/cnotch/apirouter/#Handler) func as a third parameter.
 
-If the handler is registered with [HTTPHandle](https://godoc.org/github.com/cnotch/apirouter/#HTTPHandle) or [HTTPHandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HTTPHandleFunc), it is stored in request's context and can be accessed by [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter/#PathParams).
+If the handler is registered with [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) or [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc), it is stored in request's context and can be accessed by [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter/#PathParams).
 
 #### Named
 
@@ -148,7 +148,7 @@ r:=apirouter.New(
 		fmt.Fprintf(w, "Page of stream #%s", id)
 	}),
 
-	apirouter.HTTPHandleFunc("GET","/users/:id", func(w http.ResponseWriter, r *http.Request) {
+	apirouter.HandleFunc("GET","/users/:id", func(w http.ResponseWriter, r *http.Request) {
 		ps := apirouter.PathParams(r.Context())
 		id := ps.ByName("id")
 		fmt.Fprintf(w, "Page of user #%s", id)
@@ -288,7 +288,7 @@ Example, with the standard [net/http.FileServer](https://golang.org/pkg/net/http
 
 ```Go
 r:=apirouter.New(
-	apirouter.HTTPHandle("GET","/static/*filepath", 
+	apirouter.Handle("GET","/static/*filepath", 
 		http.StripPrefix("/static/", http.FileServer(http.Dir("static")))),
 )
 ```
@@ -310,7 +310,7 @@ r:=apirouter.New(
 
 ### Work with "http.Handler"
 
-You can use [HTTPHandle](https://godoc.org/github.com/cnotch/apirouter/#HTTPHandle) and [HTTPHandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HTTPHandleFunc) to register the Handler for the standard library([http.Handler](https://golang.org/pkg/net/http/#Handler) or [http.HandlerFunc](https://golang.org/pkg/net/http/#HandlerFunc))
+You can use [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) and [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc) to register the Handler for the standard library([http.Handler](https://golang.org/pkg/net/http/#Handler) or [http.HandlerFunc](https://golang.org/pkg/net/http/#HandlerFunc))
 
 **NOTE:** Since the Handler using the standard library needs to add a new context to the Request, performance can suffer.
 
@@ -327,149 +327,150 @@ pkg: github.com/julienschmidt/go-http-routing-benchmark
 ### Single Route
 
 ``` Shell
-BenchmarkAero_Param               	21540604	        53.2 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_Param          	25946310	        46.8 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_Param              	 1000000	      1297 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_Param                	13221682	        93.0 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_Param         	  429475	      2461 ns/op	    1280 B/op	      10 allocs/op
-BenchmarkGowwwRouter_Param        	 1821579	       659 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_Param         	10643727	       107 ns/op	      32 B/op	       1 allocs/op
-BenchmarkAero_Param5              	15731380	        76.0 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_Param5         	16932524	        70.5 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_Param5             	  816888	      1511 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_Param5               	 7328193	       159 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_Param5        	  335257	      3628 ns/op	    1344 B/op	      10 allocs/op
-BenchmarkGowwwRouter_Param5       	 1626409	       743 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_Param5        	 4022265	       309 ns/op	     160 B/op	       1 allocs/op
-BenchmarkAero_Param20             	31488735	        38.3 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_Param20        	 6812640	       170 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_Param20            	  407150	      3056 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_Param20              	 2837382	       429 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_Param20       	  138084	      8653 ns/op	    3452 B/op	      12 allocs/op
-BenchmarkGowwwRouter_Param20      	 1000000	      1068 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_Param20       	 1179908	      1018 ns/op	     640 B/op	       1 allocs/op
-BenchmarkAero_ParamWrite          	12122565	        97.4 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_ParamWrite     	13888183	        89.3 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_ParamWrite         	  931020	      1360 ns/op	     360 B/op	       4 allocs/op
-BenchmarkGin_ParamWrite           	 7708123	       157 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_ParamWrite    	  461530	      2515 ns/op	    1280 B/op	      10 allocs/op
-BenchmarkGowwwRouter_ParamWrite   	  554713	      1829 ns/op	     976 B/op	       8 allocs/op
-BenchmarkHttpRouter_ParamWrite    	 8600326	       145 ns/op	      32 B/op	       1 allocs/op
+BenchmarkAero_Param               	24144682	        52.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_Param          	24836985	        49.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_Param              	  964224	      1323 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_Param                	12476570	        88.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Param         	  432448	      2489 ns/op	    1280 B/op	      10 allocs/op
+BenchmarkGowwwRouter_Param        	 1860969	       660 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_Param         	10968362	       106 ns/op	      32 B/op	       1 allocs/op
+BenchmarkAero_Param5              	15488991	        79.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_Param5         	17314315	        68.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_Param5             	  778066	      1513 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_Param5               	 7728501	       158 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Param5        	  351091	      3606 ns/op	    1344 B/op	      10 allocs/op
+BenchmarkGowwwRouter_Param5       	 1606382	       742 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_Param5        	 3943095	       314 ns/op	     160 B/op	       1 allocs/op
+BenchmarkAero_Param20             	32496225	        37.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_Param20        	 6949796	       171 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_Param20            	  347565	      3031 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_Param20              	 2845663	       422 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Param20       	  133251	      8543 ns/op	    3452 B/op	      12 allocs/op
+BenchmarkGowwwRouter_Param20      	 1000000	      1065 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_Param20       	 1000000	      1079 ns/op	     640 B/op	       1 allocs/op
+BenchmarkAero_ParamWrite          	12568646	        97.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_ParamWrite     	13623519	        90.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_ParamWrite         	  934646	      1345 ns/op	     360 B/op	       4 allocs/op
+BenchmarkGin_ParamWrite           	 7493145	       159 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParamWrite    	  442160	      2581 ns/op	    1280 B/op	      10 allocs/op
+BenchmarkGowwwRouter_ParamWrite   	  608452	      1819 ns/op	     976 B/op	       8 allocs/op
+BenchmarkHttpRouter_ParamWrite    	 8014755	       140 ns/op	      32 B/op	       1 allocs/op
 ```
 
 ### GithubAPI Routes: 203
 
 ``` Shell
-   Aero: 478312 Bytes
-   ApiRouter: 76688 Bytes
+   Aero: 506040 Bytes
+   ApiRouter: 89264 Bytes
    Beego: 150936 Bytes
    Gin: 58512 Bytes
    GorillaMux: 1322784 Bytes
    GowwwRouter: 80008 Bytes
    HttpRouter: 37096 Bytes
 
-BenchmarkAero_GithubStatic        	22760636	        54.0 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_GithubStatic   	42693703	        29.3 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_GithubStatic       	 1000000	      1280 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_GithubStatic         	12199152	       107 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GithubStatic  	  213040	      5766 ns/op	     976 B/op	       9 allocs/op
-BenchmarkGowwwRouter_GithubStatic 	14731132	        84.6 ns/op	       0 B/op	       0 allocs/op
-BenchmarkHttpRouter_GithubStatic  	24394756	        45.7 ns/op	       0 B/op	       0 allocs/op
-BenchmarkAero_GithubParam         	11435451	       103 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_GithubParam    	12438667	        99.2 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_GithubParam        	  917167	      1423 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_GithubParam          	 5982903	       203 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GithubParam   	  156993	      7988 ns/op	    1296 B/op	      10 allocs/op
-BenchmarkGowwwRouter_GithubParam  	 1560400	       776 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_GithubParam   	 4653098	       263 ns/op	      96 B/op	       1 allocs/op
-BenchmarkAero_GithubAll           	   53347	     21956 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_GithubAll      	   60822	     19068 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_GithubAll          	    4308	    301569 ns/op	   71457 B/op	     609 allocs/op
-BenchmarkGin_GithubAll            	   26431	     44441 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GithubAll     	     300	   4052300 ns/op	  251655 B/op	    1994 allocs/op
-BenchmarkGowwwRouter_GithubAll    	   10000	    156146 ns/op	   72144 B/op	     501 allocs/op
-BenchmarkHttpRouter_GithubAll     	   23202	     52077 ns/op	   13792 B/op	     167 allocs/op
+BenchmarkAero_GithubStatic        	24764742	        52.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_GithubStatic   	44066424	        29.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_GithubStatic       	 1000000	      1260 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_GithubStatic         	12070008	       108 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GithubStatic  	  213408	      5478 ns/op	     976 B/op	       9 allocs/op
+BenchmarkGowwwRouter_GithubStatic 	13270420	        92.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GithubStatic  	24445467	        45.3 ns/op	       0 B/op	       0 allocs/op
+BenchmarkAero_GithubParam         	10188027	       118 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_GithubParam    	14502672	        84.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_GithubParam        	  971031	      1502 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_GithubParam          	 5943706	       201 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GithubParam   	  146402	      8306 ns/op	    1296 B/op	      10 allocs/op
+BenchmarkGowwwRouter_GithubParam  	 1522910	       777 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_GithubParam   	 4485136	       278 ns/op	      96 B/op	       1 allocs/op
+BenchmarkAero_GithubAll           	   52974	     22689 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_GithubAll      	   65557	     18919 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_GithubAll          	    3519	    298226 ns/op	   71457 B/op	     609 allocs/op
+BenchmarkGin_GithubAll            	   27138	     45814 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GithubAll     	     307	   3911106 ns/op	  251655 B/op	    1994 allocs/op
+BenchmarkGowwwRouter_GithubAll    	   10000	    155828 ns/op	   72144 B/op	     501 allocs/op
+BenchmarkHttpRouter_GithubAll     	   23499	     51290 ns/op	   13792 B/op	     167 allocs/op
 ```
 
 ### GPlusAPI Routes : 13
 
 ```Shell
    Aero: 26552 Bytes
-   ApiRouter: 30976 Bytes
+   ApiRouter: 31952 Bytes
    Beego: 10272 Bytes
    Gin: 4384 Bytes
    GorillaMux: 66208 Bytes
    GowwwRouter: 5744 Bytes
    HttpRouter: 2760 Bytes
 
-BenchmarkAero_GPlusStatic         	31431427	        42.7 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_GPlusStatic    	56323669	        23.1 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_GPlusStatic        	  938733	      1218 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_GPlusStatic          	15607772	        80.4 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GPlusStatic   	  632060	      1864 ns/op	     976 B/op	       9 allocs/op
-BenchmarkGowwwRouter_GPlusStatic  	35895400	        32.7 ns/op	       0 B/op	       0 allocs/op
-BenchmarkHttpRouter_GPlusStatic   	42249679	        29.2 ns/op	       0 B/op	       0 allocs/op
-BenchmarkAero_GPlusParam          	17786320	        68.0 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_GPlusParam     	18365196	        65.6 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_GPlusParam         	  941380	      1409 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_GPlusParam           	 9359449	       128 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GPlusParam    	  325118	      3277 ns/op	    1280 B/op	      10 allocs/op
-BenchmarkGowwwRouter_GPlusParam   	 1754960	       683 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_GPlusParam    	 7090489	       170 ns/op	      64 B/op	       1 allocs/op
-BenchmarkAero_GPlus2Params        	11922658	        98.3 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_GPlus2Params   	11186883	       107 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_GPlus2Params       	  753024	      1464 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_GPlus2Params         	 6780692	       178 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GPlus2Params  	  191918	      6229 ns/op	    1296 B/op	      10 allocs/op
-BenchmarkGowwwRouter_GPlus2Params 	 1669560	       714 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_GPlus2Params  	 5449536	       206 ns/op	      64 B/op	       1 allocs/op
-BenchmarkAero_GPlusAll            	 1000000	      1026 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_GPlusAll       	 1210138	      1005 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_GPlusAll           	   65090	     18437 ns/op	    4576 B/op	      39 allocs/op
-BenchmarkGin_GPlusAll             	  679156	      1841 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_GPlusAll      	   23200	     51648 ns/op	   16112 B/op	     128 allocs/op
-BenchmarkGowwwRouter_GPlusAll     	  140528	      8605 ns/op	    4752 B/op	      33 allocs/op
-BenchmarkHttpRouter_GPlusAll      	  436131	      2347 ns/op	     640 B/op	      11 allocs/op
+BenchmarkAero_GPlusStatic         	27960792	        41.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_GPlusStatic    	57509564	        22.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_GPlusStatic        	 1000000	      1231 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_GPlusStatic          	14276492	        80.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlusStatic   	  569024	      1899 ns/op	     976 B/op	       9 allocs/op
+BenchmarkGowwwRouter_GPlusStatic  	34480376	        34.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_GPlusStatic   	41569572	        26.7 ns/op	       0 B/op	       0 allocs/op
+BenchmarkAero_GPlusParam          	18108130	        69.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_GPlusParam     	19340407	        63.5 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_GPlusParam         	  938853	      1335 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_GPlusParam           	 9421104	       131 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlusParam    	  335938	      3297 ns/op	    1280 B/op	      10 allocs/op
+BenchmarkGowwwRouter_GPlusParam   	 1770891	       683 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_GPlusParam    	 6602436	       176 ns/op	      64 B/op	       1 allocs/op
+BenchmarkAero_GPlus2Params        	11700950	        99.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_GPlus2Params   	12474241	        98.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_GPlus2Params       	  862087	      1454 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_GPlus2Params         	 6744548	       175 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlus2Params  	  185772	      6279 ns/op	    1296 B/op	      10 allocs/op
+BenchmarkGowwwRouter_GPlus2Params 	 1646191	       715 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_GPlus2Params  	 5442988	       209 ns/op	      64 B/op	       1 allocs/op
+BenchmarkAero_GPlusAll            	 1000000	      1078 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_GPlusAll       	 1255639	       986 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_GPlusAll           	   64459	     18017 ns/op	    4576 B/op	      39 allocs/op
+BenchmarkGin_GPlusAll             	  570110	      1930 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_GPlusAll      	   22620	     51007 ns/op	   16112 B/op	     128 allocs/op
+BenchmarkGowwwRouter_GPlusAll     	  137460	      8661 ns/op	    4752 B/op	      33 allocs/op
+BenchmarkHttpRouter_GPlusAll      	  485757	      2412 ns/op	     640 B/op	      11 allocs/op
 ```
+
 ### ParseAPI Routes: 26
 
 ```Shell
    Aero: 29304 Bytes
-   ApiRouter: 37456 Bytes
+   ApiRouter: 38608 Bytes
    Beego: 19280 Bytes
    Gin: 7776 Bytes
    GorillaMux: 105880 Bytes
    GowwwRouter: 9344 Bytes
    HttpRouter: 5024 Bytes
 
-BenchmarkAero_ParseStatic         	26644269	        46.0 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_ParseStatic    	48720290	        26.3 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_ParseStatic        	 1000000	      1265 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_ParseStatic          	14162275	        84.0 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_ParseStatic   	  531556	      2294 ns/op	     976 B/op	       9 allocs/op
-BenchmarkGowwwRouter_ParseStatic  	35058130	        33.6 ns/op	       0 B/op	       0 allocs/op
-BenchmarkHttpRouter_ParseStatic   	43125240	        29.1 ns/op	       0 B/op	       0 allocs/op
-BenchmarkAero_ParseParam          	20620428	        61.6 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_ParseParam     	19883750	        61.2 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_ParseParam         	  911560	      1423 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_ParseParam           	12397555	       100 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_ParseParam    	  389101	      2803 ns/op	    1280 B/op	      10 allocs/op
-BenchmarkGowwwRouter_ParseParam   	 1628454	       739 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_ParseParam    	 7091450	       167 ns/op	      64 B/op	       1 allocs/op
-BenchmarkAero_Parse2Params        	16377946	        73.1 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_Parse2Params   	16628174	        73.4 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_Parse2Params       	  890661	      1386 ns/op	     352 B/op	       3 allocs/op
-BenchmarkGin_Parse2Params         	10027630	       125 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_Parse2Params  	  371895	      3150 ns/op	    1296 B/op	      10 allocs/op
-BenchmarkGowwwRouter_Parse2Params 	 1740235	       710 ns/op	     432 B/op	       3 allocs/op
-BenchmarkHttpRouter_Parse2Params  	 6144558	       198 ns/op	      64 B/op	       1 allocs/op
-BenchmarkAero_ParseAll            	  633602	      1741 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_ParseAll       	  904820	      1474 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_ParseAll           	   35168	     33860 ns/op	    9152 B/op	      78 allocs/op
-BenchmarkGin_ParseAll             	  344960	      3339 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_ParseAll      	   10000	    115180 ns/op	   30288 B/op	     250 allocs/op
-BenchmarkGowwwRouter_ParseAll     	   84831	     15241 ns/op	    6912 B/op	      48 allocs/op
-BenchmarkHttpRouter_ParseAll      	  371112	      3221 ns/op	     640 B/op	      16 allocs/op
+BenchmarkAero_ParseStatic         	24398053	        52.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_ParseStatic    	49408676	        25.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_ParseStatic        	 1000000	      1278 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_ParseStatic          	14866940	        87.0 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParseStatic   	  483002	      2423 ns/op	     976 B/op	       9 allocs/op
+BenchmarkGowwwRouter_ParseStatic  	35223200	        33.2 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_ParseStatic   	42254116	        28.4 ns/op	       0 B/op	       0 allocs/op
+BenchmarkAero_ParseParam          	17067716	        64.6 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_ParseParam     	20084414	        59.8 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_ParseParam         	  939766	      1334 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_ParseParam           	11693838	       102 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParseParam    	  404385	      2593 ns/op	    1280 B/op	      10 allocs/op
+BenchmarkGowwwRouter_ParseParam   	 1800579	       670 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_ParseParam    	 7680414	       152 ns/op	      64 B/op	       1 allocs/op
+BenchmarkAero_Parse2Params        	17208108	        74.9 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_Parse2Params   	17270054	        72.1 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_Parse2Params       	  836359	      1367 ns/op	     352 B/op	       3 allocs/op
+BenchmarkGin_Parse2Params         	 9392289	       130 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_Parse2Params  	  385114	      3097 ns/op	    1296 B/op	      10 allocs/op
+BenchmarkGowwwRouter_Parse2Params 	 1761308	       718 ns/op	     432 B/op	       3 allocs/op
+BenchmarkHttpRouter_Parse2Params  	 6646308	       183 ns/op	      64 B/op	       1 allocs/op
+BenchmarkAero_ParseAll            	  693284	      1813 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_ParseAll       	  936142	      1400 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_ParseAll           	   35727	     33790 ns/op	    9152 B/op	      78 allocs/op
+BenchmarkGin_ParseAll             	  333061	      3477 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_ParseAll      	   10000	    106275 ns/op	   30288 B/op	     250 allocs/op
+BenchmarkGowwwRouter_ParseAll     	   90518	     13095 ns/op	    6912 B/op	      48 allocs/op
+BenchmarkHttpRouter_ParseAll      	  419498	      3036 ns/op	     640 B/op	      16 allocs/op
 ```
 
 ### Static Routes: 157
@@ -483,11 +484,11 @@ BenchmarkHttpRouter_ParseAll      	  371112	      3221 ns/op	     640 B/op	     
    GowwwRouter: 24968 Bytes
    HttpRouter: 21680 Bytes
 
-BenchmarkAero_StaticAll           	  114135	     10390 ns/op	       0 B/op	       0 allocs/op
-BenchmarkApiRouter_StaticAll      	  190582	      6254 ns/op	       0 B/op	       0 allocs/op
-BenchmarkBeego_StaticAll          	    6160	    227035 ns/op	   55265 B/op	     471 allocs/op
-BenchmarkGin_StaticAll            	   43140	     29442 ns/op	       0 B/op	       0 allocs/op
-BenchmarkGorillaMux_StaticAll     	    1202	   1038774 ns/op	  153236 B/op	    1413 allocs/op
-BenchmarkGowwwRouter_StaticAll    	   59642	     20368 ns/op	       0 B/op	       0 allocs/op
-BenchmarkHttpRouter_StaticAll     	  103846	     12098 ns/op	       0 B/op	       0 allocs/op
+BenchmarkAero_StaticAll           	  118082	     10180 ns/op	       0 B/op	       0 allocs/op
+BenchmarkApiRouter_StaticAll      	  184347	      6248 ns/op	       0 B/op	       0 allocs/op
+BenchmarkBeego_StaticAll          	    5565	    224430 ns/op	   55265 B/op	     471 allocs/op
+BenchmarkGin_StaticAll            	   40398	     29213 ns/op	       0 B/op	       0 allocs/op
+BenchmarkGorillaMux_StaticAll     	    1224	   1051964 ns/op	  153236 B/op	    1413 allocs/op
+BenchmarkGowwwRouter_StaticAll    	   58590	     20201 ns/op	       0 B/op	       0 allocs/op
+BenchmarkHttpRouter_StaticAll     	  103761	     11498 ns/op	       0 B/op	       0 allocs/op
 ```
