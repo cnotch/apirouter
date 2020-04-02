@@ -18,13 +18,13 @@ func loadRouterSingle(method, path string, h apirouter.Handler) http.Handler {
 	return apirouter.New(apirouter.Handle(method, path, h))
 }
 
-func loadRouter(routes []route, h apirouter.Handler) *apirouter.Router {
+func loadRouter(routes []route, style apirouter.Style, h apirouter.Handler) *apirouter.Router {
 	options := make([]apirouter.Option, len(routes))
 	for i, route := range routes {
 		options[i] = apirouter.Handle(route.method, route.path, h)
 	}
 
-	return apirouter.New(options...)
+	return apirouter.NewWithStyle(style, options...)
 }
 
 type testCase struct {
@@ -90,7 +90,7 @@ func TestRouterMatch(t *testing.T) {
 		{http.MethodTrace, "/", false, nil, nil},
 	}
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
-	runTestCases(t, loadRouter(routes, page), testCases)
+	runTestCases(t, loadRouter(routes, apirouter.DefaultStyle, page), testCases)
 }
 
 func TestRouterMatchWildcards(t *testing.T) {
@@ -111,7 +111,80 @@ func TestRouterMatchWildcards(t *testing.T) {
 	}
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 
-	runTestCases(t, loadRouter(routes, page), testCases)
+	runTestCases(t, loadRouter(routes, apirouter.DefaultStyle, page), testCases)
+}
+
+func TestRouterMatch_gRPC(t *testing.T) {
+	routes := []route{
+		{"GET", "/"},
+		{"GET", "/user"},
+		{"GET", `/user/{id=^\d+$}/books`},
+		{"GET", "/user/{id}"},
+		{"GET", "/user/{id}/profile"},
+		{"GET", "/user/{name}:verb1"},
+		{"GET", "/user/{name}/profile:verb1"},
+		{"GET", "/user/{id}/profile/{theme}"},
+		{"GET", "/user/{id}/{something}"},
+		{"GET", "/admin"},
+		{"GET", `/admin/{role=^\d+$}`},
+		{"GET", "/中国人"},
+	}
+
+	testCases := []testCase{
+		{"GET", "/", true, nil, nil},
+		{"GET", "/user", true, nil, nil},
+		{"GET", "/user/123/books", true, []string{"id"}, []string{"123"}},
+		{"GET", "/user/guest", true, []string{"id"}, []string{"guest"}},
+		{"GET", "/user/guest/profile", true, []string{"id"}, []string{"guest"}},
+		{"GET", "/user/guest:verb1", true, []string{"name"}, []string{"guest"}},
+		{"GET", "/user/guest/profile:verb1", true, []string{"name"}, []string{"guest"}},
+		{"GET", "/user/guest:verb2", false, nil, nil},
+		{"GET", "/user/guest/profile:verb2", false, nil, nil},
+		{"GET", "/user/guest/profile/456", true, []string{"id", "theme"}, []string{"guest", "456"}},
+		{"GET", "/user/guest/456", true, []string{"id", "something"}, []string{"guest", "456"}},
+		{"GET", "/admin", true, nil, nil},
+		{"GET", "/x", false, nil, nil},
+		{"GET", "/user/guest/456/x", false, nil, nil},
+		{"GET", "/admin/x", false, nil, nil},
+		{"GET", "/admin/888", true, []string{"role"}, []string{"888"}},
+		{"GET", "/中", false, nil, nil},
+		{"GET", "/中国", false, nil, nil},
+		{"GET", "/中国人", true, nil, nil},
+		{http.MethodHead, "/", false, nil, nil},
+		{http.MethodPost, "/", false, nil, nil},
+		{http.MethodPut, "/", false, nil, nil},
+		{http.MethodPatch, "/", false, nil, nil},
+		{http.MethodDelete, "/", false, nil, nil},
+		{http.MethodConnect, "/", false, nil, nil},
+		{http.MethodOptions, "/", false, nil, nil},
+		{http.MethodTrace, "/", false, nil, nil},
+	}
+	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
+	runTestCases(t, loadRouter(routes, apirouter.GoogleStyle, page), testCases)
+}
+func TestRouterMatchWildcards_gRPC(t *testing.T) {
+	routes := []route{
+		{"GET", "/"},
+		{"GET", "/images"},
+		{"GET", "/images/{file=**}"},
+		{"GET", "/images/{jpgfile=**}:jpg"},
+		{"GET", "/videos/{file=**}"},
+		{"GET", "/audios/**"},
+		{"GET", "/{anything=**}"},
+	}
+
+	testCases := []testCase{
+		{"GET", "/", true, nil, nil},
+		{"GET", "/images", true, nil, nil},
+		{"GET", "/images/hello.webp", true, []string{"file"}, []string{"hello.webp"}},
+		{"GET", "/images/hello.webp:jpg", true, []string{"jpgfile"}, []string{"hello.webp"}},
+		{"GET", "/videos/hello.webm", true, []string{"file"}, []string{"hello.webm"}},
+		{"GET", "/audios/hello.mp3", true, []string{""}, []string{"hello.mp3"}},
+		{"GET", "/documents/hello.txt", true, []string{"anything"}, []string{"documents/hello.txt"}},
+	}
+	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
+
+	runTestCases(t, loadRouter(routes, apirouter.GoogleStyle, page), testCases)
 }
 
 func TestRouterServeHTTP(t *testing.T) {
@@ -192,7 +265,7 @@ func TestRouterNewPanic(t *testing.T) {
 func BenchmarkStaticRoutes(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 	routes := staticRoutes
-	r := loadRouter(routes, page)
+	r := loadRouter(routes, apirouter.DefaultStyle, page)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -209,7 +282,7 @@ func BenchmarkStaticRoutes(b *testing.B) {
 func BenchmarkGitHubRoutes(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 	routes := githubAPI
-	r := loadRouter(routes, page)
+	r := loadRouter(routes, apirouter.DefaultStyle, page)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -230,7 +303,7 @@ func BenchmarkApiRouter_New(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		r := loadRouter(routes, page)
+		r := loadRouter(routes, apirouter.DefaultStyle, page)
 		_ = r
 	}
 }
@@ -270,7 +343,7 @@ func BenchmarkApiRouter_ParamWrite(b *testing.B) {
 
 func BenchmarkApiRouter_GithubStatic(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
-	r := loadRouter(githubAPI, page)
+	r := loadRouter(githubAPI, apirouter.DefaultStyle, page)
 
 	req, _ := http.NewRequest("GET", "/user/repos", nil)
 	benchRequest(b, r, req)
@@ -278,7 +351,7 @@ func BenchmarkApiRouter_GithubStatic(b *testing.B) {
 
 func BenchmarkApiRouter_GithubParam(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
-	r := loadRouter(githubAPI, page)
+	r := loadRouter(githubAPI, apirouter.DefaultStyle, page)
 
 	req, _ := http.NewRequest("GET", "/repos/julienschmidt/httprouter/stargazers", nil)
 	benchRequest(b, r, req)
@@ -287,7 +360,7 @@ func BenchmarkApiRouter_GithubParam(b *testing.B) {
 func BenchmarkApiRouter_GithubAll(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 	routes := githubAPI
-	handler := loadRouter(routes, page)
+	handler := loadRouter(routes, apirouter.DefaultStyle, page)
 
 	w := new(mockResponseWriter)
 	r, _ := http.NewRequest("GET", "/", nil)

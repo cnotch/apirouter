@@ -33,7 +33,7 @@
 //  }
 //
 // The registered pattern, against which the router matches incoming requests, can
-// contain three types of parameters:
+// contain three types of parameters(default style):
 //  Syntax    					Type
 //  :name     					named parameter
 //	:name=regular-expressions	regular expression parameter
@@ -114,6 +114,38 @@ import (
 // the path parameters extracted from the HTTP request.
 type Handler func(w http.ResponseWriter, r *http.Request, ps Params)
 
+// Style A Style represents the style of the pattern of route.
+//
+// 1. DefaultStyle represents the style of the default. Syntax:
+//
+// 	Pattern		= "/" Segments
+// 	Segments	= Segment { "/" Segment }
+// 	Segment		= LITERAL | Parameter
+//	Parameter	= Anonymous | Named
+//	Anonymous	= ":" | "*"
+//	Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
+// 	FieldPath	= IDENT { "." IDENT }
+//
+// 2. GoogleStyle represents the style of the GoogleApi. Syntax:
+//
+// 	Pattern		= "/" Segments [ Verb ] ;
+// 	Segments	= Segment { "/" Segment } ;
+// 	Segment		= LITERAL | Parameter
+//	Parameter	= Anonymous | Named
+//	Anonymous	= "*" | "**"
+//	Named		= "{" FieldPath [ "=" Wildcard ] "}"
+//	Wildcard	= "*" | "**" | Regexp
+// 	FieldPath	= IDENT { "." IDENT } ;
+// 	Verb		= ":" LITERAL ;
+//
+type Style int
+
+// Built-in pattern style
+const (
+	DefaultStyle Style = iota
+	GoogleStyle
+)
+
 // Router implements http.Handler interface.
 // It matches the URL of each incoming request, and calls the
 // handler that most closely matches the URL.
@@ -137,7 +169,32 @@ type Router struct {
 // New returns a new Router,which is initialized with
 // the given options.
 func New(options ...Option) *Router {
+	return NewWithStyle(DefaultStyle, options...)
+}
+
+// NewWithStyle returns a new Router,which is initialized with
+// the given style and options.
+func NewWithStyle(style Style, options ...Option) *Router {
+	var parser parser
+	if style == DefaultStyle {
+		parser = defaultStyleParser(0)
+	} else if style == GoogleStyle {
+		parser = googleStyleParser(0)
+	} else {
+		panic("Invalid pattern style")
+	}
+
 	r := &Router{notFoundHandler: http.NotFoundHandler()}
+	r.get.parser = parser
+	r.post.parser = parser
+	r.delete.parser = parser
+	r.put.parser = parser
+	r.patch.parser = parser
+	r.head.parser = parser
+	r.connect.parser = parser
+	r.trace.parser = parser
+	r.options.parser = parser
+
 	for _, opt := range options {
 		opt.apply(r)
 	}

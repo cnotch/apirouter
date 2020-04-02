@@ -5,12 +5,9 @@
 package apirouter
 
 import (
-	"fmt"
 	"regexp"
 	"sort"
-	"strings"
 	"sync"
-	"unsafe"
 
 	"github.com/cnotch/queue"
 )
@@ -24,10 +21,12 @@ const (
 	percentageOfNonempty = 0.95
 )
 
-// entry stores entry of route
-type entry struct {
-	pnames []string // parameter names extracted from the pattern
-	h      Handler
+// route stores the route entry in the router
+type route struct {
+	key     string
+	h       Handler
+	params  []string // parameters extracted from the pattern
+	pattern string   // original pattern string
 }
 
 func code(c byte) int {
@@ -45,10 +44,8 @@ type tree struct {
 	// check stores the parent state
 	check []int
 
-	// keys the list of the key of route entry
-	keys []string
-	// es the list of route entry
-	es []entry
+	// routes the list of route entry
+	routes []route
 
 	// res parameter validation regular expressions
 	res []*regexp.Regexp
@@ -57,6 +54,22 @@ type tree struct {
 	// Learn from aero (https://github.com/aerogo/aero)
 	static      map[string]Handler
 	canBeStatic [2048]bool
+
+	parser parser
+}
+
+func (t *tree) add(pattern string, h Handler) {
+	route := t.parser.parse(pattern, &t.res)
+	if len(route.params) == 0 { // static
+		if t.static == nil {
+			t.static = make(map[string]Handler)
+		}
+		t.static[pattern] = h
+		t.canBeStatic[len(pattern)] = true
+	} else {
+		route.h = h
+		t.routes = append(t.routes, route)
+	}
 }
 
 func (t *tree) staticMatch(path string) Handler {
@@ -69,13 +82,15 @@ func (t *tree) staticMatch(path string) Handler {
 }
 
 func (t *tree) patternMatch(path string, params *Params) (h Handler) {
+	path, verb := t.parser.splitPath(path)
 	state := rootState
 
 	lastStarState := -1 // last '*' state
 	lastStarIndex := 0  // index of the last '*' in the path
 	pcount := uint16(0) // parameter count
+	sc := len(t.base)
 OUTER:
-	for i, sc := 0, len(t.base); i < len(path); {
+	for i := 0; i < len(path); {
 		// try to match the beginning '/' of current segment
 		slashState := t.base[state] + code('/')
 		if !(slashState < sc && state == t.check[slashState]) {
@@ -142,14 +157,24 @@ OUTER:
 		state = lastStarState
 	}
 
+	if verb != "" { // match verb
+		for i := 0; i < len(verb); i++ {
+			next := t.base[state] + code(verb[i])
+			if next < sc && state == t.check[next] {
+				state = next
+			} else {
+				return
+			}
+		}
+	}
+
 	// get the end state
 	endState := t.base[state] + endCode
-	currbase := t.base[endState]
-	if t.check[endState] == state && currbase < 0 {
-		i := -currbase - 1
+	if endState < sc && t.check[endState] == state && t.base[endState] < 0 {
+		i := -t.base[endState] - 1
 		params.path = path
-		params.names = t.es[i].pnames
-		h = t.es[i].h
+		params.names = t.routes[i].params
+		h = t.routes[i].h
 	}
 	return
 }
@@ -186,84 +211,11 @@ func (t *tree) match(path string, params *Params) (h Handler) {
 	return t.patternMatch(path, params)
 }
 
-func (t *tree) add(pattern string, handler Handler) {
-	e := entry{h: handler}
-	key := make([]byte, 0, len(pattern)+1)
-
-	prevChar := byte(0)
-	c := byte(0)
-	for i := 0; i < len(pattern); i, prevChar = i+1, c {
-		c = pattern[i]
-		key = append(key, c)
-
-		if prevChar != '/' {
-			continue
-		}
-
-		if c == ':' {
-			m := strings.IndexByte(pattern[i:], '/')
-			var nameAndRe string
-			if m < 0 { // last part
-				nameAndRe = pattern[i+1:]
-				i = len(pattern) - 1
-			} else {
-				nameAndRe = pattern[i+1 : i+m]
-				i = i + m - 1 // for i++
-			}
-
-			reSep := strings.IndexByte(nameAndRe, '=') // Search for a name/regexp separator.
-			if reSep < 0 {                             // only name
-				e.pnames = append(e.pnames, nameAndRe)
-			} else {
-				e.pnames = append(e.pnames, nameAndRe[:reSep])
-				res := nameAndRe[reSep+1:]
-				if res == "" {
-					panic(fmt.Errorf("router: pattern has empty regular expression - %q", pattern))
-				}
-				rec := -1 // regular expression keychar
-				for j, exp := range t.res {
-					if exp.String() == res {
-						rec = j
-						break
-					}
-				}
-				if rec == -1 { // regular expression not exist
-					re := regexp.MustCompile(res)
-					rec = len(t.res)
-					t.res = append(t.res, re)
-				}
-
-				key = append(key, '=', byte(rec))
-			}
-		} else if c == '*' {
-			m := strings.IndexByte(pattern[i:], '/')
-			if m > 0 {
-				panic(fmt.Errorf("router: '*' in pattern must is last segment - %q", pattern))
-			}
-			e.pnames = append(e.pnames, pattern[i+1:])
-			i = len(pattern) - 1
-		} else if c == '/' {
-			panic(fmt.Errorf("router: pattern include empty segment - %q", pattern))
-		}
-	}
-
-	if len(e.pnames) == 0 { // static
-		if t.static == nil {
-			t.static = make(map[string]Handler)
-		}
-		t.static[pattern] = handler
-		t.canBeStatic[len(pattern)] = true
-	} else {
-		t.keys = append(t.keys, *(*string)(unsafe.Pointer(&key)))
-		t.es = append(t.es, e)
-	}
-}
-
 func (t *tree) init() {
 	// sort and de-duplicate
 	t.rearrange()
-	t.grow((len(t.es) + 1) * 2)
-	if len(t.es) == 0 {
+	t.grow((len(t.routes) + 1) * 2)
+	if len(t.routes) == 0 {
 		return
 	}
 
@@ -273,7 +225,7 @@ func (t *tree) init() {
 		state: rootState,
 		depth: 0,
 		begin: 0,
-		end:   len(t.es),
+		end:   len(t.routes),
 	})
 
 	var base int            // offset base of children
@@ -302,27 +254,18 @@ func (t *tree) init() {
 		curr.childs = curr.childs[:0]
 		nodesPool.Put(curr)
 	}
-
-	t.keys = nil
-}
-
-type byKey tree
-
-func (p *byKey) Len() int           { return len(p.keys) }
-func (p *byKey) Less(i, j int) bool { return p.keys[i] < p.keys[j] }
-func (p *byKey) Swap(i, j int) {
-	p.keys[i], p.keys[j] = p.keys[j], p.keys[i]
-	p.es[i], p.es[j] = p.es[j], p.es[i]
 }
 
 func (t *tree) rearrange() {
-	sort.Sort((*byKey)(t))
+	sort.Slice(t.routes, func(i, j int) bool {
+		return t.routes[i].key < t.routes[j].key
+	})
 
 	// de-duplicate
-	for i := len(t.es) - 1; i > 0; i-- {
-		if t.keys[i] == t.keys[i-1] {
-			copy(t.es[i-1:], t.es[i:])
-			t.es = t.es[:len(t.es)-1]
+	for i := len(t.routes) - 1; i > 0; i-- {
+		if t.routes[i].key == t.routes[i-1].key {
+			copy(t.routes[i-1:], t.routes[i:])
+			t.routes = t.routes[:len(t.routes)-1]
 		}
 	}
 }
@@ -402,7 +345,7 @@ func (t *tree) getNodes(n node) *nodes {
 	l.state = n.state
 
 	i := n.begin
-	if i < n.end && len(t.keys[i]) == n.depth { // the end of key
+	if i < n.end && len(t.routes[i].key) == n.depth { // the end of key
 		l.append(endCode, n.depth+1, i, i+1)
 		i++
 	}
@@ -410,7 +353,7 @@ func (t *tree) getNodes(n node) *nodes {
 	var currBegin int
 	currCode := -1
 	for ; i < n.end; i++ {
-		code := code(t.keys[i][n.depth])
+		code := code(t.routes[i].key[n.depth])
 		if currCode != code {
 			if currCode != -1 {
 				l.append(currCode, n.depth+1, currBegin, i)

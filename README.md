@@ -23,6 +23,7 @@ I had to write one myself as an exercise
 - Best Performance: [Benchmarks speak for themselves](#benchmarks)
 - Compatibility with the [http.Handler](https://golang.org/pkg/net/http/#Handler) interface
 - Named parameters, regular expressions parameters and wildcard parameters
+- Support google RESTful api style
 - Smart prioritized routes
 - No allocations, matching and retrieve parameters don't allocates.
 
@@ -71,6 +72,61 @@ r:= apirouter.New(
 	apirouter.GET("/users/*page",...),
 	apirouter.GET("/users/list",...),
 )
+```
+
+### Pattern Styles
+
+### Default style
+On the example below the router will use default style.
+
+```go
+r:= apirouter.New(...)
+```
+
+or
+
+```go
+r:= apirouter.New(apirouter.DefaultStyle,...)
+```
+
+Default sytle syntax:
+
+```Shell
+Pattern		= "/" Segments
+Segments	= Segment { "/" Segment }
+Segment		= LITERAL | Parameter
+Parameter	= Anonymous | Named
+Anonymous	= ":" | "*"
+Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
+FieldPath	= IDENT { "." IDENT }
+```
+
+#### Google style
+On the example below the router will use google style.
+
+```go
+r:= apirouter.New(apirouter.GoogleStyle,
+	apirouter.Handle("GET", `/user/{id=^\d+$}/books`,h),
+	apirouter.Handle("GET", "/user/{id}",h),
+	apirouter.Handle("GET", "/user/{id}:verb",h),
+	apirouter.Handle("GET", "/user/{id}/profile/{theme}",h),
+	apirouter.Handle("GET", "/images/{file=**}",h),
+	apirouter.Handle("GET", "/images/{file=**}:jpg",h),
+)
+```
+
+Google sytle syntax:
+
+```Shell
+Pattern		= "/" Segments [ Verb ] ;
+Segments	= Segment { "/" Segment } ;
+Segment		= LITERAL | Parameter
+Parameter	= Anonymous | Named
+Anonymous	= "*" | "**"
+Named		= "{" FieldPath [ "=" Wildcard ] "}"
+Wildcard	= "*" | "**" | Regexp
+FieldPath	= IDENT { "." IDENT } ;
+Verb		= ":" LITERAL ;
 ```
 
 ### Parameters
