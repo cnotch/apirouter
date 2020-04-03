@@ -172,9 +172,6 @@ r:=apirouter.New(
 )
 ```
 
-<details>
-<summary>No surprise</summary>
-
 A parameter can be used on the same level as a static route, without conflict:
 
 ```Go
@@ -189,7 +186,6 @@ r:=apirouter.New(
 	}),
 )
 ```
-</details>
 
 #### Regular expressions
 
@@ -208,13 +204,14 @@ r:=apirouter.New(
 
 **WARN:** Regular expressions can significantly reduce performance.
 
-<details>
-<summary>No surprise</summary>
-
 A parameter with a regular expression can be used on the same level as a simple parameter, without conflict:
 
 ```Go
 r:=apirouter.New(
+	apirouter.GET("/users/admin", func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
+		fmt.Fprint(w, "admin page")
+	}),
+
 	apirouter.GET(`/users/:id=^\d+$`, func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
 		id := ps.ByName("id")
 		fmt.Fprintf(w, "Page of user #%s", id)
@@ -226,8 +223,6 @@ r:=apirouter.New(
 	}),
 )
 ```
-
-</details>
 
 #### Wildcard
 
@@ -243,9 +238,6 @@ r:=apirouter.New(
 	}),
 )
 ```
-
-<details>
-<summary>No surprise</summary>
 
 Deeper route paths with the same prefix as the wildcard will take precedence, without conflict:
 
@@ -283,7 +275,6 @@ r:=apirouter.New(
 	}),
 )
 ```
-</details>
 
 ### Static files
 
