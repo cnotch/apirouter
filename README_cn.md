@@ -1,53 +1,45 @@
 ApiRouter
 =========
-[中文](README_cn.md)
+[apirouter](https://godoc.org/github.com/cnotch/apirouter)提供了一个轻量级高效的 RESTful APIs 路由器。
 
-[apirouter](https://godoc.org/github.com/cnotch/apirouter) provides a lightning fast RESTful api router.
+## 动机
 
-My English is too poor. The project documentation and code comments are mainly modeled after the following projects:
-+ [gowwwrouter](https://github.com/gowww/router)
-+ [aero](https://github.com/aerogo/aero)
-+ [httprouter](https://github.com/julienschmidt/httprouter)
+在开发服务端应用时，提供 RESTful APIs 是必要的。希望有这么一个库：
++ 简单：聚焦于路径参数的提取和路由
++ 高效：良好的性能
 
-Thanks to these open source projects.
+[aero](https://github.com/aerogo/aero) 性能不错，但它更像一个框架。 [httprouter](https://github.com/julienschmidt/httprouter) 比较聚焦，但性能一般般。
 
-## Motivation
-When developing server-side applications, it is necessary to provide RESTful APIs. I would like to have a library:
-+ Simple: focus on path parameter extraction and routing
-+ Fast: better performance
+最后，决定自己开发一个，权当练习。
 
-[aero](https://github.com/aerogo/aero) performance is good, but it's more like a framwork. [httprouter](https://github.com/julienschmidt/httprouter) functions are focusing, but its performance is mediocre. 
+## 特性
 
-I had to write one myself as an exercise
+- 极佳的性能： [性能报告](#benchmarks)
+- 和标准库 [http.Handler](https://golang.org/pkg/net/http/#Handler) 兼容
+- 支持匿名参数，命名参数，正则表达式参数和通配参数
+- 支持 Google 风格的路径匹配规则（gRPC）
+- 智能最佳匹配路由
+- 匹配和接收路径参数无需分配内存
 
-## Features
+## 安装
 
-- Best Performance: [Benchmarks speak for themselves](#benchmarks)
-- Compatibility with the [http.Handler](https://golang.org/pkg/net/http/#Handler) interface
-- Named parameters, regular expressions parameters and wildcard parameters
-- Support google RESTful api style
-- Smart prioritized routes
-- No allocations, matching and retrieve parameters don't allocates.
-
-## Installing
-
-1. Get package:
+1. 获取包：
 
 	```Shell
 	go get -u github.com/cnotch/apirouter
 	```
 
-2. Import it in your code:
+2. 导入：
 
 	```Go
 	import "github.com/cnotch/apirouter"
 	```
 
-## Usage
+## 使用
 
-It is recommended to work with [http.ServeMux](https://godoc.org/github.com/cnotch/apirouter/#ServeMux) to take advantage of the standard library.
+建议和 [http.ServeMux](https://godoc.org/github.com/cnotch/apirouter/#ServeMux) 配合使用，充分利用标准库。
 
-1. Make a new router:
+1. 创建一个路由器：
 
 	```Go
 	r := apirouter.New(
@@ -57,18 +49,18 @@ It is recommended to work with [http.ServeMux](https://godoc.org/github.com/cnot
 	)
 	```
 
-	Remember that HTTP methods are case-sensitive and uppercase by convention ([RFC 7231 4.1](https://tools.ietf.org/html/rfc7231#section-4.1)).  
-	So you can directly use the built-in shortcuts for standard HTTP methods, such as [apirouter.GET](https://godoc.org/github.com/cnotch/apirouter#GET)...
+	HTTP 方法是区分大小写的 ([RFC 7231 4.1](https://tools.ietf.org/html/rfc7231#section-4.1)).  
+	对标准的 HTTP 方法可以使用快捷函数，诸如：[apirouter.GET](https://godoc.org/github.com/cnotch/apirouter#GET)...
 
-2. Give the router to the server:
+2. 将路由器分配到服务实例：
 
 	```Go
 	http.ListenAndServe(":8080", r)
 	```
 
-### Precedence example
+### 优先级
 
-On the example below the router will test the routes in the following order, /users/list then /users/:id=^\d+$ then /users/:id then /users/*page.
+以下例子安装如下顺序检测路由：/users/list 、 /users/:id=^\d+$ 、 /users/:id 、 /users/*page.
 
 ```go
 r:= apirouter.New(
@@ -79,22 +71,22 @@ r:= apirouter.New(
 )
 ```
 
-### Pattern Styles
+### 模式字串风格
 
-### Default style
-On the example below the router will use default style.
+### 默认风格
+以下例子都是按默认风格解析模式字串：
 
 ```go
 r:= apirouter.New(...)
 ```
 
-or
+或
 
 ```go
 r:= apirouter.New(apirouter.DefaultStyle,...)
 ```
 
-Default sytle syntax:
+默认风格语法：
 
 ```Shell
 Pattern		= "/" Segments
@@ -106,8 +98,8 @@ Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
 FieldPath	= IDENT { "." IDENT }
 ```
 
-#### Google style
-On the example below the router will use google style.
+#### Google 风格（gRPC）
+以下例子使用 Google 风格：
 
 ```go
 r:= apirouter.New(apirouter.GoogleStyle,
@@ -120,7 +112,7 @@ r:= apirouter.New(apirouter.GoogleStyle,
 )
 ```
 
-Google sytle syntax:
+Google 风格语法：
 
 ```Shell
 Pattern		= "/" Segments [ Verb ] ;
@@ -134,17 +126,17 @@ FieldPath	= IDENT { "." IDENT } ;
 Verb		= ":" LITERAL ;
 ```
 
-### Parameters
+### 参数
 
-The value of parameters is saved as a [Params](https://godoc.org/github.com/cnotch/apirouter/#Params). The Params is passed to the [Handler](https://godoc.org/github.com/cnotch/apirouter/#Handler) func as a third parameter.
+参数值存储在 [Params](https://godoc.org/github.com/cnotch/apirouter/#Params) 中。 Params 作为第三个参数传递给函数 [Handler](https://godoc.org/github.com/cnotch/apirouter/#Handler).
 
-If the handler is registered with [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) or [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc), it is stored in request's context and can be accessed by [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter/#PathParams).
+如果使用 [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) 或 [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc) 注册请求处理程序，它存储在请求上下文中并可以通过 [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter/#PathParams) 获得。
 
-#### Named
+#### 命名参数
 
-A named parameter begins with `:` and matches any value until the next `/` or end of path.
+命名参数以 `:` 开始，它匹配后续任意字符，直到路径结束或遇到下一个 `/`。
 
-Example, with a parameter `id`:
+例子（包含参数`id`）：
 
 ```Go
 r:=apirouter.New(
@@ -161,7 +153,7 @@ r:=apirouter.New(
 )
 ```
 
-If you don't need to retrieve the parameter value by name, you can omit the parameter name:
+如果不关心参数名，可以省略参数名：
 
 ```Go
 r:=apirouter.New(
@@ -172,10 +164,7 @@ r:=apirouter.New(
 )
 ```
 
-<details>
-<summary>No surprise</summary>
-
-A parameter can be used on the same level as a static route, without conflict:
+同级路径段中，静态值和命名参数不会产生冲突：
 
 ```Go
 r:=apirouter.New(
@@ -189,11 +178,10 @@ r:=apirouter.New(
 	}),
 )
 ```
-</details>
 
-#### Regular expressions
+#### 正则表达式参数
 
-If a parameter must match an exact pattern (digits only, for example), you can also set a [regular expression](https://golang.org/pkg/regexp/syntax) constraint just after the parameter name and `=`:
+如果参数需要精确匹配（比如仅数字），可以设置一个正则表达式参数。它在命名参数和`=` 后设置。
 
 ```Go
 r:=apirouter.New(
@@ -204,17 +192,18 @@ r:=apirouter.New(
 )
 ```
 
-**NOTE:** No more than 256 different regular expressions are allowed.
+**NOTE:** 路由器中支持不超过 256 个不同的正则表达式。
 
-**WARN:** Regular expressions can significantly reduce performance.
+**WARN:** 正则表达式将大幅降低性能。
 
-<details>
-<summary>No surprise</summary>
-
-A parameter with a regular expression can be used on the same level as a simple parameter, without conflict:
+同级路径段中，静态值、命名参数和正则表达式参数不会产生冲突：
 
 ```Go
 r:=apirouter.New(
+	apirouter.GET("/users/admin", func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
+		fmt.Fprint(w, "admin page")
+	}),
+
 	apirouter.GET(`/users/:id=^\d+$`, func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
 		id := ps.ByName("id")
 		fmt.Fprintf(w, "Page of user #%s", id)
@@ -227,13 +216,9 @@ r:=apirouter.New(
 )
 ```
 
-</details>
+#### 通配参数
 
-#### Wildcard
-
-Wildcard parameters match anything until the path end, not including the directory index (the '/' before the '*'). Since they match anything until the end, wildcard parameters must always be the final path element.
-
-The rest of the request path becomes the parameter value of `*`:
+通配参数匹配任何字符直到路径结束，但不包含通配符前导 `/`。通配参数只能出现在模式字串的最后段中。
 
 ```Go
 r:=apirouter.New(
@@ -244,10 +229,7 @@ r:=apirouter.New(
 )
 ```
 
-<details>
-<summary>No surprise</summary>
-
-Deeper route paths with the same prefix as the wildcard will take precedence, without conflict:
+具有与通配符相同前缀的更深层路由路径将优先，且不存在冲突:
 
 ```Go
 // Will match:
@@ -283,13 +265,12 @@ r:=apirouter.New(
 	}),
 )
 ```
-</details>
 
-### Static files
+### 静态文件
 
-For serving static files, like for the standard [net/http.ServeMux](https://golang.org/pkg/net/http#ServeMux), just bring your own handler.
+和 [net/http.ServeMux](https://golang.org/pkg/net/http#ServeMux)类似。
 
-Example, with the standard [net/http.FileServer](https://golang.org/pkg/net/http#FileServer):
+以下例子使用标准库中 [net/http.FileServer](https://golang.org/pkg/net/http#FileServer):
 
 ```Go
 r:=apirouter.New(
@@ -298,12 +279,12 @@ r:=apirouter.New(
 )
 ```
 
-### Custom "not found" handler
+### 自定义 “未找到” 处理器
 
-When a request match no route, the response status is set to 404 and an empty body is sent by default.
+当请求没有匹配的路由时，响应状态被设置为 404，并且默认发送一个空的主体。
 
-But you can set your own "not found" handler.  
-In this case, it's up to you to set the response status code (normally 404):
+但是您可以设置自己的“未找到”处理程序。
+在这种情况下，由您来设置响应状态代码(通常为404):
 
 ```Go
 r:=apirouter.New(
@@ -313,11 +294,11 @@ r:=apirouter.New(
 )
 ```
 
-### Work with "http.Handler"
+### 和 "http.Handler" 协同工作
 
-You can use [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) and [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc) to register the Handler for the standard library([http.Handler](https://golang.org/pkg/net/http/#Handler) or [http.HandlerFunc](https://golang.org/pkg/net/http/#HandlerFunc))
+可以使用 [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) 和 [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc) 来注册标准库的 ([http.Handler](https://golang.org/pkg/net/http/#Handler) 或 [http.HandlerFunc](https://golang.org/pkg/net/http/#HandlerFunc))
 
-**NOTE:** Since the Handler using the standard library needs to add a new context to the Request, performance can suffer.
+**NOTE:** 使用标准库需要添加新的上下文，对性能有一定的影响。
 
 ## Benchmarks
 
