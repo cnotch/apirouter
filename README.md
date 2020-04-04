@@ -418,8 +418,8 @@ BenchmarkGin_GPlusParam           	 9070120	       132 ns/op	       0 B/op	     
 BenchmarkGorillaMux_GPlusParam    	  352827	      3254 ns/op	    1280 B/op	      10 allocs/op
 BenchmarkGowwwRouter_GPlusParam   	 1751876	       686 ns/op	     432 B/op	       3 allocs/op
 BenchmarkHttpRouter_GPlusParam    	 6812570	       172 ns/op	      64 B/op	       1 allocs/op
-BenchmarkAero_GPlus2Params        	12382214	       101 ns/op	       0 B/op	       0 allocs/op
 
+BenchmarkAero_GPlus2Params        	12382214	       101 ns/op	       0 B/op	       0 allocs/op
 BenchmarkApiRouter_GPlus2Params   	12620882	        93.6 ns/op	       0 B/op	       0 allocs/op
 BenchmarkBeego_GPlus2Params       	  826052	      1454 ns/op	     352 B/op	       3 allocs/op
 BenchmarkGin_GPlus2Params         	 6700472	       176 ns/op	       0 B/op	       0 allocs/op
