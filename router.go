@@ -114,38 +114,6 @@ import (
 // the path parameters extracted from the HTTP request.
 type Handler func(w http.ResponseWriter, r *http.Request, ps Params)
 
-// Style A Style represents the style of the pattern of route.
-//
-// 1. DefaultStyle represents the style of the default. Syntax:
-//
-// 	Pattern		= "/" Segments
-// 	Segments	= Segment { "/" Segment }
-// 	Segment		= LITERAL | Parameter
-//	Parameter	= Anonymous | Named
-//	Anonymous	= ":" | "*"
-//	Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
-// 	FieldPath	= IDENT { "." IDENT }
-//
-// 2. GoogleStyle represents the style of the GoogleApi. Syntax:
-//
-// 	Pattern		= "/" Segments [ Verb ] ;
-// 	Segments	= Segment { "/" Segment } ;
-// 	Segment		= LITERAL | Parameter
-//	Parameter	= Anonymous | Named
-//	Anonymous	= "*" | "**"
-//	Named		= "{" FieldPath [ "=" Wildcard ] "}"
-//	Wildcard	= "*" | "**" | Regexp
-// 	FieldPath	= IDENT { "." IDENT } ;
-// 	Verb		= ":" LITERAL ;
-//
-type Style int
-
-// Built-in pattern style
-const (
-	DefaultStyle Style = iota
-	GoogleStyle
-)
-
 // Router implements http.Handler interface.
 // It matches the URL of each incoming request, and calls the
 // handler that most closely matches the URL.
@@ -167,23 +135,42 @@ type Router struct {
 }
 
 // New returns a new Router,which is initialized with
-// the given options.
+// the given options and default pattern style.
+//
+// The syntax of the pattern string is as follows:
+//
+// 	Pattern		= "/" Segments
+// 	Segments	= Segment { "/" Segment }
+// 	Segment		= LITERAL | Parameter
+//	Parameter	= Anonymous | Named
+//	Anonymous	= ":" | "*"
+//	Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
+// 	FieldPath	= IDENT { "." IDENT }
+//
 func New(options ...Option) *Router {
-	return NewWithStyle(DefaultStyle, options...)
+	return newWithParser(defaultStyleParser(0), options...)
 }
 
-// NewWithStyle returns a new Router,which is initialized with
-// the given style and options.
-func NewWithStyle(style Style, options ...Option) *Router {
-	var parser parser
-	if style == DefaultStyle {
-		parser = defaultStyleParser(0)
-	} else if style == GoogleStyle {
-		parser = googleStyleParser(0)
-	} else {
-		panic("Invalid pattern style")
-	}
+// NewForGRPC returns a new Router,which is initialized with
+// the given options and gRPC pattern style.
+//
+// The syntax of the pattern string is as follows:
+//
+// 	Pattern		= "/" Segments [ Verb ] ;
+// 	Segments	= Segment { "/" Segment } ;
+// 	Segment		= LITERAL | Parameter
+//	Parameter	= Anonymous | Named
+//	Anonymous	= "*" | "**"
+//	Named		= "{" FieldPath [ "=" Wildcard ] "}"
+//	Wildcard	= "*" | "**" | Regexp
+// 	FieldPath	= IDENT { "." IDENT } ;
+// 	Verb		= ":" LITERAL ;
+//
+func NewForGRPC(options ...Option) *Router {
+	return newWithParser(googleStyleParser(0), options...)
+}
 
+func newWithParser(parser parser, options ...Option) *Router {
 	r := &Router{notFoundHandler: http.NotFoundHandler()}
 	r.get.parser = parser
 	r.post.parser = parser

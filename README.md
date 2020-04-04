@@ -12,6 +12,7 @@ My English is too poor. The project documentation and code comments are mainly m
 Thanks to these open source projects.
 
 ## Motivation
+
 When developing server-side applications, it is necessary to provide RESTful APIs. I would like to have a library:
 + Simple: focus on path parameter extraction and routing
 + Fast: better performance
@@ -25,7 +26,7 @@ I had to write one myself as an exercise
 - Best Performance: [Benchmarks speak for themselves](#benchmarks)
 - Compatibility with the [http.Handler](https://golang.org/pkg/net/http/#Handler) interface
 - Named parameters, regular expressions parameters and wildcard parameters
-- Support google RESTful api style
+- Support gRPC RESTful api style
 - Smart prioritized routes
 - No allocations, matching and retrieve parameters don't allocates.
 
@@ -85,13 +86,12 @@ r:= apirouter.New(
 On the example below the router will use default style.
 
 ```go
-r:= apirouter.New(...)
-```
-
-or
-
-```go
-r:= apirouter.New(apirouter.DefaultStyle,...)
+r:= apirouter.New(
+	apirouter.API("GET", `/user/:id=^\d+$/books`,h),
+	apirouter.API("GET", "/user/:id",h),
+	apirouter.API("GET", "/user/:id/profile/:theme",h),
+	apirouter.API("GET", "/images/*file",h),
+)
 ```
 
 Default sytle syntax:
@@ -106,11 +106,11 @@ Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
 FieldPath	= IDENT { "." IDENT }
 ```
 
-#### Google style
-On the example below the router will use google style.
+#### gRPC style
+On the example below the router will use gRPC style.
 
 ```go
-r:= apirouter.New(apirouter.GoogleStyle,
+r:= apirouter.NewForGRPC(
 	apirouter.API("GET", `/user/{id=^\d+$}/books`,h),
 	apirouter.API("GET", "/user/{id}",h),
 	apirouter.API("GET", "/user/{id}:verb",h),
@@ -120,7 +120,7 @@ r:= apirouter.New(apirouter.GoogleStyle,
 )
 ```
 
-Google sytle syntax:
+gRPC sytle syntax:
 
 ```Shell
 Pattern		= "/" Segments [ Verb ] ;

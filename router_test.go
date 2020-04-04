@@ -18,13 +18,22 @@ func loadRouterSingle(method, path string, h apirouter.Handler) http.Handler {
 	return apirouter.New(apirouter.API(method, path, h))
 }
 
-func loadRouter(routes []route, style apirouter.Style, h apirouter.Handler) *apirouter.Router {
+func loadRouter(routes []route, h apirouter.Handler) *apirouter.Router {
 	options := make([]apirouter.Option, len(routes))
 	for i, route := range routes {
 		options[i] = apirouter.API(route.method, route.path, h)
 	}
 
-	return apirouter.NewWithStyle(style, options...)
+	return apirouter.New(options...)
+}
+
+func loadGRPCRouter(routes []route, h apirouter.Handler) *apirouter.Router {
+	options := make([]apirouter.Option, len(routes))
+	for i, route := range routes {
+		options[i] = apirouter.API(route.method, route.path, h)
+	}
+
+	return apirouter.NewForGRPC(options...)
 }
 
 type testCase struct {
@@ -91,7 +100,7 @@ func TestRouterMatch(t *testing.T) {
 		{http.MethodTrace, "/", false, nil, nil},
 	}
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
-	runTestCases(t, loadRouter(routes, apirouter.DefaultStyle, page), testCases)
+	runTestCases(t, loadRouter(routes, page), testCases)
 }
 
 func TestRouterMatchWildcards(t *testing.T) {
@@ -112,7 +121,7 @@ func TestRouterMatchWildcards(t *testing.T) {
 	}
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 
-	runTestCases(t, loadRouter(routes, apirouter.DefaultStyle, page), testCases)
+	runTestCases(t, loadRouter(routes, page), testCases)
 }
 
 func TestRouterMatch_gRPC(t *testing.T) {
@@ -164,7 +173,7 @@ func TestRouterMatch_gRPC(t *testing.T) {
 		{http.MethodTrace, "/", false, nil, nil},
 	}
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
-	runTestCases(t, loadRouter(routes, apirouter.GoogleStyle, page), testCases)
+	runTestCases(t, loadGRPCRouter(routes, page), testCases)
 }
 func TestRouterMatchWildcards_gRPC(t *testing.T) {
 	routes := []route{
@@ -188,7 +197,7 @@ func TestRouterMatchWildcards_gRPC(t *testing.T) {
 	}
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 
-	runTestCases(t, loadRouter(routes, apirouter.GoogleStyle, page), testCases)
+	runTestCases(t, loadGRPCRouter(routes, page), testCases)
 }
 
 func TestRouterServeHTTP(t *testing.T) {
@@ -261,27 +270,27 @@ func TestRouterNewPanic(t *testing.T) {
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "user/admin", page))
+		router := apirouter.NewForGRPC(apirouter.API("GET", "user/admin", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user//admin", page))
+		router := apirouter.NewForGRPC(apirouter.API("GET", "/user//admin", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/**/books", page))
+		router := apirouter.NewForGRPC(apirouter.API("GET", "/user/**/books", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/{id=**}/books", page))
+		router := apirouter.NewForGRPC(apirouter.API("GET", "/user/{id=**}/books", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/{id/books", page))
+		router := apirouter.NewForGRPC(apirouter.API("GET", "/user/{id/books", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
-		router := apirouter.NewWithStyle(apirouter.GoogleStyle,apirouter.API("GET", "/user/{id=}/books", page))
+		router := apirouter.NewForGRPC(apirouter.API("GET", "/user/{id=}/books", page))
 		_ = router
 	})
 	assert.Panics(t, func() {
@@ -297,7 +306,7 @@ func TestRouterNewPanic(t *testing.T) {
 func BenchmarkStaticRoutes(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 	routes := staticRoutes
-	r := loadRouter(routes, apirouter.DefaultStyle, page)
+	r := loadRouter(routes, page)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -314,7 +323,7 @@ func BenchmarkStaticRoutes(b *testing.B) {
 func BenchmarkGitHubRoutes(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 	routes := githubAPI
-	r := loadRouter(routes, apirouter.DefaultStyle, page)
+	r := loadRouter(routes, page)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -335,7 +344,7 @@ func BenchmarkApiRouter_New(b *testing.B) {
 	b.ReportAllocs()
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
-		r := loadRouter(routes, apirouter.DefaultStyle, page)
+		r := loadRouter(routes, page)
 		_ = r
 	}
 }
@@ -375,7 +384,7 @@ func BenchmarkApiRouter_ParamWrite(b *testing.B) {
 
 func BenchmarkApiRouter_GithubStatic(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
-	r := loadRouter(githubAPI, apirouter.DefaultStyle, page)
+	r := loadRouter(githubAPI, page)
 
 	req, _ := http.NewRequest("GET", "/user/repos", nil)
 	benchRequest(b, r, req)
@@ -383,7 +392,7 @@ func BenchmarkApiRouter_GithubStatic(b *testing.B) {
 
 func BenchmarkApiRouter_GithubParam(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
-	r := loadRouter(githubAPI, apirouter.DefaultStyle, page)
+	r := loadRouter(githubAPI, page)
 
 	req, _ := http.NewRequest("GET", "/repos/julienschmidt/httprouter/stargazers", nil)
 	benchRequest(b, r, req)
@@ -392,7 +401,7 @@ func BenchmarkApiRouter_GithubParam(b *testing.B) {
 func BenchmarkApiRouter_GithubAll(b *testing.B) {
 	page := func(_ http.ResponseWriter, req *http.Request, ps apirouter.Params) {}
 	routes := githubAPI
-	handler := loadRouter(routes, apirouter.DefaultStyle, page)
+	handler := loadRouter(routes, page)
 
 	w := new(mockResponseWriter)
 	r, _ := http.NewRequest("GET", "/", nil)

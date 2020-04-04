@@ -17,7 +17,7 @@ ApiRouter
 - 极佳的性能： [性能报告](#benchmarks)
 - 和标准库 [http.Handler](https://golang.org/pkg/net/http/#Handler) 兼容
 - 支持匿名参数，命名参数，正则表达式参数和通配参数
-- 支持 Google 风格的路径匹配规则（gRPC）
+- 支持 gRPC 风格的路径匹配规则
 - 智能最佳匹配路由
 - 匹配和接收路径参数无需分配内存
 
@@ -77,13 +77,12 @@ r:= apirouter.New(
 以下例子都是按默认风格解析模式字串：
 
 ```go
-r:= apirouter.New(...)
-```
-
-或
-
-```go
-r:= apirouter.New(apirouter.DefaultStyle,...)
+r:= apirouter.New(
+	apirouter.API("GET", `/user/:id=^\d+$/books`,h),
+	apirouter.API("GET", "/user/:id",h),
+	apirouter.API("GET", "/user/:id/profile/:theme",h),
+	apirouter.API("GET", "/images/*file",h),
+)
 ```
 
 默认风格语法：
@@ -98,11 +97,11 @@ Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
 FieldPath	= IDENT { "." IDENT }
 ```
 
-#### Google 风格（gRPC）
-以下例子使用 Google 风格：
+#### gRPC 风格
+以下例子使用 gRPC 风格：
 
 ```go
-r:= apirouter.New(apirouter.GoogleStyle,
+r:= apirouter.NewForGRPC(
 	apirouter.API("GET", `/user/{id=^\d+$}/books`,h),
 	apirouter.API("GET", "/user/{id}",h),
 	apirouter.API("GET", "/user/{id}:verb",h),
@@ -112,7 +111,7 @@ r:= apirouter.New(apirouter.GoogleStyle,
 )
 ```
 
-Google 风格语法：
+gRPC 风格语法：
 
 ```Shell
 Pattern		= "/" Segments [ Verb ] ;
