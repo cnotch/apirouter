@@ -54,7 +54,8 @@ func API(method string, pattern string, handler Handler) Option {
 		if t == nil {
 			panic(fmt.Errorf("router: unknown http method - %q", method))
 		}
-		t.add(pattern, handler)
+		p := MustPattern(r.newPattern(pattern, &t.res))
+		t.add(p, handler)
 	})
 }
 

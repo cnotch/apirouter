@@ -105,6 +105,7 @@ package apirouter
 
 import (
 	"net/http"
+	"regexp"
 )
 
 // Handler is a function that can be registered to a router to
@@ -132,55 +133,44 @@ type Router struct {
 	options tree
 
 	notFoundHandler http.Handler
+	newPattern      func(string, *[]*regexp.Regexp) (Pattern, error)
 }
 
 // New returns a new Router,which is initialized with
 // the given options and default pattern style.
 //
-// The syntax of the pattern string is as follows:
-//
-// 	Pattern		= "/" Segments
-// 	Segments	= Segment { "/" Segment }
-// 	Segment		= LITERAL | Parameter
-//	Parameter	= Anonymous | Named
-//	Anonymous	= ":" | "*"
-//	Named		= ":" FieldPath [ "=" Regexp ] | "*" FieldPath
-// 	FieldPath	= IDENT { "." IDENT }
-//
+// The syntax of the pattern reference apirouter.NewPattern.
 func New(options ...Option) *Router {
-	return newWithParser(defaultStyleParser(0), options...)
+	r := &Router{
+		notFoundHandler: http.NotFoundHandler(),
+		newPattern:      NewPattern,
+	}
+
+	for _, opt := range options {
+		opt.apply(r)
+	}
+	r.initTrees()
+	return r
 }
 
 // NewForGRPC returns a new Router,which is initialized with
 // the given options and gRPC pattern style.
 //
-// The syntax of the pattern string is as follows:
-//
-// 	Pattern		= "/" Segments [ Verb ] ;
-// 	Segments	= Segment { "/" Segment } ;
-// 	Segment		= LITERAL | Parameter
-//	Parameter	= Anonymous | Named
-//	Anonymous	= "*" | "**"
-//	Named		= "{" FieldPath [ "=" Wildcard ] "}"
-//	Wildcard	= "*" | "**" | Regexp
-// 	FieldPath	= IDENT { "." IDENT } ;
-// 	Verb		= ":" LITERAL ;
-//
+// The syntax of the pattern reference apirouter.NewGRPCPattern.
 func NewForGRPC(options ...Option) *Router {
-	return newWithParser(googleStyleParser(0), options...)
-}
-
-func newWithParser(parser parser, options ...Option) *Router {
-	r := &Router{notFoundHandler: http.NotFoundHandler()}
-	r.get.parser = parser
-	r.post.parser = parser
-	r.delete.parser = parser
-	r.put.parser = parser
-	r.patch.parser = parser
-	r.head.parser = parser
-	r.connect.parser = parser
-	r.trace.parser = parser
-	r.options.parser = parser
+	r := &Router{
+		notFoundHandler: http.NotFoundHandler(),
+		newPattern:      NewGRPCPattern,
+	}
+	r.get.supportVerb = true
+	r.post.supportVerb = true
+	r.delete.supportVerb = true
+	r.put.supportVerb = true
+	r.patch.supportVerb = true
+	r.head.supportVerb = true
+	r.connect.supportVerb = true
+	r.trace.supportVerb = true
+	r.options.supportVerb = true
 
 	for _, opt := range options {
 		opt.apply(r)

@@ -23,11 +23,11 @@ const (
 
 // route stores the route entry in the router
 type route struct {
-	key     string
-	h       Handler
-	params  []string // parameters extracted from the pattern
-	pattern string   // original pattern string
+	p Pattern
+	h Handler
 }
+
+func (rt route) key() string { return rt.p.key }
 
 func code(c byte) int {
 	return int(c) + codeOffset
@@ -55,20 +55,18 @@ type tree struct {
 	static      map[string]Handler
 	canBeStatic [2048]bool
 
-	parser parser
+	supportVerb bool
 }
 
-func (t *tree) add(pattern string, h Handler) {
-	route := t.parser.parse(pattern, &t.res)
-	if len(route.params) == 0 { // static
+func (t *tree) add(p Pattern, h Handler) {
+	if len(p.fields) == 0 { // static
 		if t.static == nil {
 			t.static = make(map[string]Handler)
 		}
-		t.static[pattern] = h
-		t.canBeStatic[len(pattern)] = true
+		t.static[p.pattern] = h
+		t.canBeStatic[len(p.pattern)] = true
 	} else {
-		route.h = h
-		t.routes = append(t.routes, route)
+		t.routes = append(t.routes, route{p, h})
 	}
 }
 
@@ -82,7 +80,11 @@ func (t *tree) staticMatch(path string) Handler {
 }
 
 func (t *tree) patternMatch(path string, params *Params) (h Handler) {
-	path, verb := t.parser.splitPath(path)
+	path, verb := path, ""
+	if t.supportVerb {
+		path, verb = splitURLPath(path)
+	}
+
 	state := rootState
 
 	lastStarState := -1 // last '*' state
@@ -177,7 +179,7 @@ OUTER:
 	if endState < sc && t.check[endState] == state && t.base[endState] < 0 {
 		i := -t.base[endState] - 1
 		params.path = path
-		params.names = t.routes[i].params
+		params.names = t.routes[i].p.fields
 		h = t.routes[i].h
 	}
 	return
@@ -262,12 +264,12 @@ func (t *tree) init() {
 
 func (t *tree) rearrange() {
 	sort.Slice(t.routes, func(i, j int) bool {
-		return t.routes[i].key < t.routes[j].key
+		return t.routes[i].key() < t.routes[j].key()
 	})
 
 	// de-duplicate
 	for i := len(t.routes) - 1; i > 0; i-- {
-		if t.routes[i].key == t.routes[i-1].key {
+		if t.routes[i].key() == t.routes[i-1].key() {
 			copy(t.routes[i-1:], t.routes[i:])
 			t.routes = t.routes[:len(t.routes)-1]
 		}
@@ -349,7 +351,7 @@ func (t *tree) getNodes(n node) *nodes {
 	l.state = n.state
 
 	i := n.begin
-	if i < n.end && len(t.routes[i].key) == n.depth { // the end of key
+	if i < n.end && len(t.routes[i].key()) == n.depth { // the end of key
 		l.append(endCode, n.depth+1, i, i+1)
 		i++
 	}
@@ -357,7 +359,7 @@ func (t *tree) getNodes(n node) *nodes {
 	var currBegin int
 	currCode := -1
 	for ; i < n.end; i++ {
-		code := code(t.routes[i].key[n.depth])
+		code := code(t.routes[i].key()[n.depth])
 		if currCode != code {
 			if currCode != -1 {
 				l.append(currCode, n.depth+1, currBegin, i)
