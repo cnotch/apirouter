@@ -56,13 +56,15 @@ func PathParams(c context.Context) *Params {
 }
 
 var (
-	paramsKey     = struct{}{}
+	paramsKey     = key{}
 	paramsCtxPool = sync.Pool{
 		New: func() interface{} {
 			return new(paramsCtx)
 		},
 	}
 )
+
+type key struct{}
 
 func newParamsCtx(parent context.Context) *paramsCtx {
 	c := paramsCtxPool.Get().(*paramsCtx)
