@@ -14,18 +14,18 @@ import (
 
 func TestWrap(t *testing.T) {
 	signature := ""
-	h := apirouter.Wrap(
-		func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
-			signature += "D"
-		},
+	unWrap := func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
+		signature += "D"
+	}
+	h := apirouter.Wrap(unWrap,
 		apirouter.NewInterceptor(
-			func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) bool {
+			func(w http.ResponseWriter, r *http.Request) bool {
 				signature += "A"
 				return true
-			}, func(r *http.Request, ps apirouter.Params) {
+			}, func(r *http.Request) {
 				signature += "B"
 			}),
-		apirouter.PreInterceptor(func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) bool {
+		apirouter.PreInterceptor(func(w http.ResponseWriter, r *http.Request) bool {
 			signature += "C"
 			return true
 		}),
@@ -36,19 +36,19 @@ func TestWrap(t *testing.T) {
 
 func TestWrapAbort(t *testing.T) {
 	signature := ""
-	h := apirouter.Wrap(
-		func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
-			signature += "D"
-		},
-		apirouter.PreInterceptor(func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) bool {
+	unWrap := func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) {
+		signature += "D"
+	}
+	h := apirouter.Wrap(unWrap,
+		apirouter.PreInterceptor(func(w http.ResponseWriter, r *http.Request) bool {
 			signature += "A"
 			return true
 		}),
 		apirouter.NewInterceptor(
-			func(w http.ResponseWriter, r *http.Request, ps apirouter.Params) bool {
+			func(w http.ResponseWriter, r *http.Request) bool {
 				signature += "B"
 				return false
-			}, func(r *http.Request, ps apirouter.Params) {
+			}, func(r *http.Request) {
 				signature += "C"
 			}),
 	)
