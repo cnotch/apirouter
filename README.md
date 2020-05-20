@@ -24,7 +24,7 @@ I had to write one myself as an exercise
 ## Features
 
 - Best Performance: [Benchmarks speak for themselves](#benchmarks)
-- Compatibility with the [http.Handler](https://golang.org/pkg/net/http/#Handler) interface
+- Compatibility with the [http.Handler](https://golang.org/pkg/net/http#Handler) interface
 - Named parameters, regular expressions parameters and wildcard parameters
 - Support gRPC RESTful api style
 - Smart prioritized routes
@@ -46,7 +46,7 @@ I had to write one myself as an exercise
 
 ## Usage
 
-It is recommended to work with [http.ServeMux](https://godoc.org/github.com/cnotch/apirouter/#ServeMux) to take advantage of the standard library.
+It is recommended to work with [http.ServeMux](https://godoc.org/github.com/cnotch/apirouter#ServeMux) to take advantage of the standard library.
 
 1. Make a new router:
 
@@ -136,9 +136,9 @@ Verb		= ":" LITERAL ;
 
 ### Parameters
 
-The value of parameters is saved as a [Params](https://godoc.org/github.com/cnotch/apirouter/#Params). The Params is passed to the [Handler](https://godoc.org/github.com/cnotch/apirouter/#Handler) func as a third parameter.
+The value of parameters is saved as a [Params](https://godoc.org/github.com/cnotch/apirouter#Params). The Params is passed to the [Handler](https://godoc.org/github.com/cnotch/apirouter#Handler) func as a third parameter.
 
-If the handler is registered with [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) or [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc), it is stored in request's context and can be accessed by [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter/#PathParams).
+If the handler is registered with [Handle](https://godoc.org/github.com/cnotch/apirouter#Handle) or [HandleFunc](https://godoc.org/github.com/cnotch/apirouter#HandleFunc), it is stored in request's context and can be accessed by [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter#PathParams).
 
 #### Named
 
@@ -306,7 +306,7 @@ r:=apirouter.New(
 
 ### Work with "http.Handler"
 
-You can use [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) and [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc) to register the Handler for the standard library([http.Handler](https://golang.org/pkg/net/http/#Handler) or [http.HandlerFunc](https://golang.org/pkg/net/http/#HandlerFunc))
+You can use [Handle](https://godoc.org/github.com/cnotch/apirouter#Handle) and [HandleFunc](https://godoc.org/github.com/cnotch/apirouter#HandleFunc) to register the Handler for the standard library([http.Handler](https://golang.org/pkg/net/http#Handler) or [http.HandlerFunc](https://golang.org/pkg/net/http#HandlerFunc))
 
 **NOTE:** Since the Handler using the standard library needs to add a new context to the Request, performance can suffer.
 

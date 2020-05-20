@@ -15,7 +15,7 @@ ApiRouter
 ## 特性
 
 - 极佳的性能： [性能报告](#benchmarks)
-- 和标准库 [http.Handler](https://golang.org/pkg/net/http/#Handler) 兼容
+- 和标准库 [http.Handler](https://golang.org/pkg/net/http#Handler) 兼容
 - 支持匿名参数，命名参数，正则表达式参数和通配参数
 - 支持 gRPC 风格的路径匹配规则
 - 智能最佳匹配路由
@@ -37,7 +37,7 @@ ApiRouter
 
 ## 使用
 
-建议和 [http.ServeMux](https://godoc.org/github.com/cnotch/apirouter/#ServeMux) 配合使用，充分利用标准库。
+建议和 [http.ServeMux](https://godoc.org/github.com/cnotch/apirouter#ServeMux) 配合使用，充分利用标准库。
 
 1. 创建一个路由器：
 
@@ -127,9 +127,9 @@ Verb		= ":" LITERAL ;
 
 ### 参数
 
-参数值存储在 [Params](https://godoc.org/github.com/cnotch/apirouter/#Params) 中。 Params 作为第三个参数传递给函数 [Handler](https://godoc.org/github.com/cnotch/apirouter/#Handler).
+参数值存储在 [Params](https://godoc.org/github.com/cnotch/apirouter#Params) 中。 Params 作为第三个参数传递给函数 [Handler](https://godoc.org/github.com/cnotch/apirouter#Handler).
 
-如果使用 [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) 或 [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc) 注册请求处理程序，它存储在请求上下文中并可以通过 [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter/#PathParams) 获得。
+如果使用 [Handle](https://godoc.org/github.com/cnotch/apirouter#Handle) 或 [HandleFunc](https://godoc.org/github.com/cnotch/apirouter#HandleFunc) 注册请求处理程序，它存储在请求上下文中并可以通过 [apirouter.PathParams](https://godoc.org/github.com/cnotch/apirouter#PathParams) 获得。
 
 #### 命名参数
 
@@ -295,7 +295,7 @@ r:=apirouter.New(
 
 ### 和 "http.Handler" 协同工作
 
-可以使用 [Handle](https://godoc.org/github.com/cnotch/apirouter/#Handle) 和 [HandleFunc](https://godoc.org/github.com/cnotch/apirouter/#HandleFunc) 来注册标准库的 ([http.Handler](https://golang.org/pkg/net/http/#Handler) 或 [http.HandlerFunc](https://golang.org/pkg/net/http/#HandlerFunc))
+可以使用 [Handle](https://godoc.org/github.com/cnotch/apirouter#Handle) 和 [HandleFunc](https://godoc.org/github.com/cnotch/apirouter#HandleFunc) 来注册标准库的 ([http.Handler](https://golang.org/pkg/net/http#Handler) 或 [http.HandlerFunc](https://golang.org/pkg/net/http#HandlerFunc))
 
 **NOTE:** 使用标准库需要添加新的上下文，对性能有一定的影响。
 
