@@ -4,13 +4,6 @@ ApiRouter
 
 [apirouter](https://godoc.org/github.com/cnotch/apirouter) provides a lightning fast RESTful api router.
 
-My English is too poor. The project documentation and code comments are mainly modeled after the following projects:
-+ [gowwwrouter](https://github.com/gowww/router)
-+ [aero](https://github.com/aerogo/aero)
-+ [httprouter](https://github.com/julienschmidt/httprouter)
-
-Thanks to these open source projects.
-
 ## Motivation
 
 When developing server-side applications, it is necessary to provide RESTful APIs. I would like to have a library:
