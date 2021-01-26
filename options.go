@@ -116,11 +116,11 @@ func Handle(method string, pattern string, handler http.Handler) Option {
 			ctxp := (*context.Context)(unsafe.Pointer(uintptr(unsafe.Pointer(r)) + ctxOffset))
 			oldCtx := *ctxp
 			*ctxp = paramsCtx
-
+			defer func() {
+				*ctxp = oldCtx
+				paramsCtx.Close()
+			}()
 			handler.ServeHTTP(w, r)
-
-			*ctxp = oldCtx
-			paramsCtx.Close()
 		} else {
 			handler.ServeHTTP(w, r)
 		}
