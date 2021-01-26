@@ -115,15 +115,15 @@ func NewPattern(pattern string, regexps *[]*regexp.Regexp) (p Pattern, err error
 //
 // The syntax of the pattern string is as follows:
 //
-// Pattern		= "/" Segments [ Verb ] 
-// Segments	= Segment { "/" Segment } 
-// Segment		= LITERAL | Parameter
-// Parameter	= Anonymous | Named
-// Anonymous	= "*" | "**"
-// Named		= "{" FieldPath [ "=" Wildcard ] "}"
-// Wildcard	= "*" | "**" | Regexp
-// FieldPath	= IDENT { "." IDENT } 
-// Verb		= ":" LITERAL 
+// 	Pattern		= "/" Segments [ Verb ] 
+// 	Segments	= Segment { "/" Segment } 
+// 	Segment		= LITERAL | Parameter
+// 	Parameter	= Anonymous | Named
+// 	Anonymous	= "*" | "**"
+// 	Named		= "{" FieldPath [ "=" Wildcard ] "}"
+// 	Wildcard	= "*" | "**" | Regexp
+// 	FieldPath	= IDENT { "." IDENT } 
+// 	Verb		= ":" LITERAL 
 //
 func NewGRPCPattern(pattern string, regexps *[]*regexp.Regexp) (p Pattern, err error) {
 	var fields []string
